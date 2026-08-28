@@ -1,0 +1,44 @@
+{
+  "_comment": "FUENTE ÚNICA DE ZONAS - Coordenadas en píxeles. Contrato con Arturo (integrante 4, mapas de calor). Las zonas aquí definidas son polígonos (rectángulos o irregulares) en coordenadas absolutas del frame. El integrante 5 NO debe hardcodear zonas; esta fuente es la única referencia.",
+  "metadata": {
+    "frame_width": 768,
+    "frame_height": 576,
+    "zona_type": "polygon",
+    "description": "Góndolas y zonas de interés para análisis de dwell time"
+  },
+  "zones": {
+    "gondola_1": {
+      "name": "Góndola Frente Izquierda",
+      "type": "polygon",
+      "vertices": [
+        [100, 50],
+        [350, 50],
+        [350, 450],
+        [100, 450]
+      ],
+      "description": "Zona de góndola en el lado izquierdo"
+    },
+    "gondola_2": {
+      "name": "Góndola Frente Centro",
+      "type": "polygon",
+      "vertices": [
+        [400, 50],
+        [650, 50],
+        [650, 450],
+        [400, 450]
+      ],
+      "description": "Zona de góndola en el centro"
+    },
+    "gondola_3": {
+      "name": "Góndola Fondo Izquierda",
+      "type": "polygon",
+      "vertices": [
+        [100, 500],
+        [350, 500],
+        [350, 700],
+        [100, 700]
+      ],
+      "description": "Zona de góndola en el fondo lado izquierdo"
+    }
+  }
+}
