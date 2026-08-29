@@ -277,14 +277,16 @@ def load_zones_from_json(zones_path: Path) -> dict[str, dict[str, Any]]:
     with zones_path.open("r", encoding="utf-8") as fh:
         data = json.load(fh)
 
-    if not isinstance(data, dict) or "zones" not in data:
+    if not isinstance(data, dict) or "zonas" not in data:
         raise ValueError(
-            f"zonas.json debe tener un campo 'zones': {zones_path}"
+            f"zonas.json debe tener un campo 'zonas': {zones_path}"
         )
 
-    zones = data.get("zones", {})
-    if not zones:
+    zonas = data.get("zonas", [])
+    if not zonas:
         raise ValueError(f"No se encontraron zonas en {zones_path}")
+
+    zones = {z["zone_id"]: {"vertices": z["poligono"]} for z in zonas}
 
     return zones
 

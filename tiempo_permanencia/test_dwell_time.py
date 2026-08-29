@@ -36,7 +36,7 @@ from dwell_time import (
 # ---------------------------------------------------------------------------
 
 ZONE_1 = {
-    "gondola_1": {
+    "gondola_A1": {
         "name": "Góndola Test",
         "vertices": [[100, 50], [350, 50], [350, 450], [100, 450]],
     },
@@ -125,8 +125,8 @@ def test_permanece_hasta_eof():
 def test_cambia_de_zona():
     """5. Persona cambia de una zona a otra → cierra primera, abre segunda"""
     zones = {
-        "gondola_1": {"vertices": [[100, 50], [350, 50], [350, 450], [100, 450]]},
-        "gondola_2": {"vertices": [[400, 50], [650, 50], [650, 450], [400, 450]]},
+        "gondola_A1": {"vertices": [[100, 50], [350, 50], [350, 450], [100, 450]]},
+        "gondola_A2": {"vertices": [[400, 50], [650, 50], [650, 450], [400, 450]]},
     }
     analyzer = DwellTimeAnalyzer(zones, min_dwell_ms=2000.0)
 
@@ -142,8 +142,8 @@ def test_cambia_de_zona():
     events = analyzer.get_events()
     assert len(events) == 2, f"Se esperaban 2 eventos, se obtuvieron {len(events)}"
 
-    e1 = next(e for e in events if e["zone_id"] == "gondola_1")
-    e2 = next(e for e in events if e["zone_id"] == "gondola_2")
+    e1 = next(e for e in events if e["zone_id"] == "gondola_A1")
+    e2 = next(e for e in events if e["zone_id"] == "gondola_A2")
 
     assert e1["timestamp_ms"] == 0.0 and e1["dwell_time_s"] == 1.5, "z1 0→1.5s"
     assert e1["detuvo"] is False, "z1 1.5s debe ser detuvo=False"

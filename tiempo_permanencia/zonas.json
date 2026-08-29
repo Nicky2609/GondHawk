@@ -1,44 +1,12 @@
 {
-  "_comment": "FUENTE ÚNICA DE ZONAS - Coordenadas en píxeles. Contrato con Arturo (integrante 4, mapas de calor). Las zonas aquí definidas son polígonos (rectángulos o irregulares) en coordenadas absolutas del frame. El integrante 5 NO debe hardcodear zonas; esta fuente es la única referencia.",
-  "metadata": {
-    "frame_width": 768,
-    "frame_height": 576,
-    "zona_type": "polygon",
-    "description": "Góndolas y zonas de interés para análisis de dwell time"
-  },
-  "zones": {
-    "gondola_1": {
-      "name": "Góndola Frente Izquierda",
-      "type": "polygon",
-      "vertices": [
-        [100, 50],
-        [350, 50],
-        [350, 450],
-        [100, 450]
-      ],
-      "description": "Zona de góndola en el lado izquierdo"
-    },
-    "gondola_2": {
-      "name": "Góndola Frente Centro",
-      "type": "polygon",
-      "vertices": [
-        [400, 50],
-        [650, 50],
-        [650, 450],
-        [400, 450]
-      ],
-      "description": "Zona de góndola en el centro"
-    },
-    "gondola_3": {
-      "name": "Góndola Fondo Izquierda",
-      "type": "polygon",
-      "vertices": [
-        [100, 500],
-        [350, 500],
-        [350, 700],
-        [100, 700]
-      ],
-      "description": "Zona de góndola en el fondo lado izquierdo"
-    }
-  }
+  "video_ref": "vtest.avi",
+  "frame_width": 768,
+  "frame_height": 576,
+  "zonas": [
+    {"zone_id": "gondola_A1", "poligono": [[10, 50], [150, 50], [150, 300], [10, 300]]},
+    {"zone_id": "gondola_A2", "poligono": [[160, 50], [300, 50], [300, 300], [160, 300]]},
+    {"zone_id": "gondola_A3", "poligono": [[310, 50], [450, 50], [450, 300], [310, 300]]},
+    {"zone_id": "pasillo_central", "poligono": [[10, 310], [600, 310], [600, 400], [10, 400]]},
+    {"zone_id": "gondola_B1", "poligono": [[460, 50], [600, 50], [600, 300], [460, 300]]}
+  ]
 }
