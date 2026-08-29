@@ -178,8 +178,3 @@ Vale la pena dejarlo dicho porque son las decisiones que hay que sostener:
 3. Borrar el `zonas.json` duplicado (punto 3) — 2 minutos, evita un bug feo.
 4. Juan quita la resolución quemada (punto 5) — solo si Scapder manda otro video.
 5. Diego evalúa la ventana de gracia (punto 6) — mejora la calidad del dato.
-
-Y una pregunta para la reunión con Scapder: si nos van a facilitar un set
-anonimizado, ¿podemos pedir que incluya keypoints de pose? Con eso el módulo 1
-pasa a `--modo-alcance pose` sin tocar la máquina de estados, y la exactitud de
-pick-up / put-back sube bastante.
