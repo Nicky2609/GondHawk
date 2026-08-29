@@ -28,9 +28,10 @@ Ejemplo de uso:
 
 python tiempo_permanencia/src/dwell_time.py \\
     --input tracking/output/tracking.jsonl \\
-    --zonas tiempo_permanencia/zonas.json \\
+    --zonas mapas_de_calor/config/zonas.json \\
     --output tiempo_permanencia/output/dwell_time.jsonl \\
-    --min-dwell 2.0
+    --min-dwell 2.0 \\
+    --gracia-frames 2
 """
 
 from __future__ import annotations
@@ -44,6 +45,10 @@ import cv2
 import numpy as np
 
 from trajectory_reader import TrajectoryReader
+
+DEFAULT_ZONES_PATH = (
+    Path(__file__).resolve().parents[2] / "mapas_de_calor" / "config" / "zonas.json"
+)
 
 
 class ZoneConfigError(ValueError):
@@ -69,6 +74,7 @@ class DwellTimeAnalyzer:
         self,
         zones: dict[str, dict[str, Any]],
         min_dwell_ms: float = 2000.0,
+        grace_frames: int = 2,
     ):
         """
         Inicializa el analizador.
@@ -76,15 +82,20 @@ class DwellTimeAnalyzer:
         Args:
             zones: dict con estructura de zonas {zone_id: {vertices, ...}}
             min_dwell_ms: tiempo mínimo en ms para considerar que se detuvo
+            grace_frames: número de frames consecutivos sin ver el track antes
+                de cerrar formalmente el evento para esa zona.
 
         Raises:
             ZoneConfigError: si una zona tiene geometría inválida.
         """
         if min_dwell_ms < 0:
             raise ValueError("min_dwell_ms no puede ser negativo")
+        if grace_frames < 0:
+            raise ValueError("grace_frames no puede ser negativo")
 
         self.zones = zones
         self.min_dwell_ms = min_dwell_ms
+        self.grace_frames = int(grace_frames)
 
         # Convertir vértices a arrays de numpy para cv2.pointPolygonTest
         self.zone_polygons: dict[str, np.ndarray] = {}
@@ -95,6 +106,7 @@ class DwellTimeAnalyzer:
 
         # Estado: {(track_id, zone_id): entry_timestamp_ms}
         self.active: dict[tuple[str, str], float] = {}
+        self.absent_frames: dict[tuple[str, str], int] = {}
 
         # Eventos de dwell generados
         self.events: list[dict[str, Any]] = []
@@ -177,6 +189,8 @@ class DwellTimeAnalyzer:
             tracks: lista de tracks con person_id, bbox, class.
         """
         seen: set[tuple[str, str]] = set()
+        seen_track_ids: set[str] = set()
+        track_zones: dict[str, set[str]] = {}
 
         for track in tracks:
             if track.get("class") != "person":
@@ -191,32 +205,46 @@ class DwellTimeAnalyzer:
                 raise ValueError(f"Track {track_id} sin bbox")
 
             bbox = track["bbox"]
-
-            # Centroide = punto medio del bbox (contrato)
             centroid = TrajectoryReader.get_centroid(bbox)
-
-            # Detectar en qué zona está el centroide
             zone_id = self._get_zone_for_point(centroid)
 
             if zone_id is None:
                 continue
 
+            seen_track_ids.add(track_id)
+            track_zones.setdefault(track_id, set()).add(zone_id)
             key = (track_id, zone_id)
             seen.add(key)
 
-            # Si es la primera vez que vemos esta pareja, registrar entrada
             if key not in self.active:
                 self.active[key] = timestamp_ms
+            self.absent_frames.pop(key, None)
 
-        # Detectar salidas: parejas que NO fueron vistas en este frame
-        exited = [k for k in self.active if k not in seen]
-
-        for key in exited:
+        for key in list(self.active):
             track_id, zone_id = key
-            entry_ms = self.active.pop(key)
-            dwell_ms = timestamp_ms - entry_ms
+            if key in seen:
+                continue
 
-            self._emit_event(track_id, zone_id, entry_ms, dwell_ms)
+            is_transition = (
+                track_id in seen_track_ids
+                and zone_id not in track_zones.get(track_id, set())
+            )
+
+            if is_transition:
+                entry_ms = self.active.pop(key)
+                self.absent_frames.pop(key, None)
+                dwell_ms = timestamp_ms - entry_ms
+                self._emit_event(track_id, zone_id, entry_ms, dwell_ms)
+                continue
+
+            missing_frames = self.absent_frames.get(key, 0) + 1
+            self.absent_frames[key] = missing_frames
+
+            if missing_frames >= self.grace_frames:
+                entry_ms = self.active.pop(key)
+                self.absent_frames.pop(key, None)
+                dwell_ms = timestamp_ms - entry_ms
+                self._emit_event(track_id, zone_id, entry_ms, dwell_ms)
 
     def _emit_event(
         self,
@@ -251,18 +279,20 @@ class DwellTimeAnalyzer:
             self._emit_event(track_id, zone_id, entry_ms, dwell_ms)
 
         self.active.clear()
+        self.absent_frames.clear()
 
     def get_events(self) -> list[dict[str, Any]]:
         """Retorna la lista de eventos de dwell."""
         return self.events
 
 
-def load_zones_from_json(zones_path: Path) -> dict[str, dict[str, Any]]:
+def load_zones_from_json(zones_path: Path | str | None = None) -> dict[str, dict[str, Any]]:
     """
-    Carga las zonas desde zonas.json.
+    Carga las zonas desde el catálogo oficial del proyecto.
 
     Args:
-        zones_path: ruta a zonas.json
+        zones_path: ruta a zonas.json. Si es None, usa el catálogo unificado en
+            mapas_de_calor/config/zonas.json.
 
     Returns:
         dict con la estructura de zonas
@@ -271,6 +301,10 @@ def load_zones_from_json(zones_path: Path) -> dict[str, dict[str, Any]]:
         FileNotFoundError: si el archivo no existe.
         ValueError: si el archivo no tiene el campo 'zones' o está vacío.
     """
+    if zones_path is None:
+        zones_path = DEFAULT_ZONES_PATH
+    zones_path = Path(zones_path)
+
     if not zones_path.exists():
         raise FileNotFoundError(f"No existe el archivo de zonas: {zones_path}")
 
@@ -304,8 +338,8 @@ def parse_args() -> argparse.Namespace:
 
     parser.add_argument(
         "--zonas",
-        required=True,
-        help="Archivo de configuración de zonas (zonas.json)",
+        default=str(DEFAULT_ZONES_PATH),
+        help="Archivo de configuración de zonas (default: mapas_de_calor/config/zonas.json)",
     )
 
     parser.add_argument(
@@ -321,6 +355,13 @@ def parse_args() -> argparse.Namespace:
         help="Tiempo mínimo de permanencia en segundos (default: 2.0)",
     )
 
+    parser.add_argument(
+        "--gracia-frames",
+        type=int,
+        default=2,
+        help="Frames consecutivos sin ver el track antes de cerrar el dwell (default: 2)",
+    )
+
     return parser.parse_args()
 
 
@@ -332,7 +373,11 @@ def main() -> None:
     zones = load_zones_from_json(Path(args.zonas))
 
     min_dwell_ms = args.min_dwell * 1000.0
-    analyzer = DwellTimeAnalyzer(zones, min_dwell_ms=min_dwell_ms)
+    analyzer = DwellTimeAnalyzer(
+        zones,
+        min_dwell_ms=min_dwell_ms,
+        grace_frames=args.gracia_frames,
+    )
 
     reader = TrajectoryReader(Path(args.input))
     final_timestamp_ms = 0.0
