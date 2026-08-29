@@ -1,19 +1,21 @@
 # Notas de integración — GondHawk
 
-**Responsable:** Nicol (líder técnica) · Actualizado: 29 de agosto
+**Responsable:** Nicol Arenas · Actualizado: 29 de agosto
 
 Este archivo recoge los puntos donde los módulos no encajan todavía. Todo lo
-que está aquí fue **verificado ejecutando el código**, no leyendo los README.
+que está aquí fue verificado ejecutando el código, no leyendo los README.
 El orden es por urgencia para la entrega.
 
 ---
 
-## 🔴 1. El validador del módulo 8 no se puede importar
+## 1. El validador del módulo 8 no se puede importar
+
+**Prioridad: alta**
 
 `untitled10.py` viene exportado de Google Colab y repite
 `from __future__ import annotations` en la línea 260, después de código
 ejecutable. En Colab funciona porque cada celda se ejecuta por separado; como
-archivo de Python **no compila**:
+archivo de Python no compila:
 
 ```text
 SyntaxError: from __future__ imports must occur at the beginning of the file
@@ -32,7 +34,9 @@ quitando los imports repetidos, sin modificar el original.
 
 ---
 
-## 🔴 2. La salida del módulo 5 no pasa el validador del módulo 8
+## 2. La salida del módulo 5 no pasa el validador del módulo 8
+
+**Prioridad: alta**
 
 Corriendo el validador de Paula sobre `dwell_time.jsonl` de Diego:
 
@@ -49,7 +53,7 @@ los cruzó. El validador acepta solo `track_id`, `zone_id`, `product_id`,
 **Cómo lo resolvimos en el módulo 1:** dos salidas. El archivo canónico
 conserva todo lo que el pipeline necesita (`timestamp_ms`, confianza, detalle)
 y un archivo de proyección lleva solo los 7 campos permitidos. Verificado:
-**59/59 conformes**.
+59/59 conformes.
 
 **Decisión que hay que tomar en equipo:** o Diego produce también su proyección
 de cumplimiento, o se acuerda que el módulo 1 es el único que habla con el
@@ -58,7 +62,9 @@ simple y es la que sugiero.
 
 ---
 
-## 🟠 3. Hay dos `zonas.json` distintos en el repo
+## 3. Hay dos `zonas.json` distintos en el repo
+
+**Prioridad: media**
 
 - `mapas_de_calor/config/zonas.json`
 - `tiempo_permanencia/zonas.json`
@@ -73,7 +79,9 @@ lee de esa ruta.
 
 ---
 
-## 🟠 4. El README del módulo 5 documenta un esquema que su código no lee
+## 4. El README del módulo 5 documenta un esquema que su código no lee
+
+**Prioridad: media**
 
 El README describe:
 
@@ -92,7 +100,9 @@ esto no bloquee a nadie mientras se corrige el README.
 
 ---
 
-## 🟠 5. El tracking tiene la resolución quemada en el código
+## 5. El tracking tiene la resolución quemada en el código
+
+**Prioridad: media**
 
 `tracking/src/run_tracking.py`, línea 134:
 
@@ -109,7 +119,9 @@ rango y las zonas dejan de tener sentido, sin ningún error visible.
 
 ---
 
-## 🟡 6. El módulo 5 fragmenta episodios cuando el tracker parpadea
+## 6. El módulo 5 fragmenta episodios cuando el tracker parpadea
+
+**Prioridad: baja**
 
 `DwellTimeAnalyzer.process_frame` cierra un episodio en cuanto la pareja
 `(track_id, zone_id)` no aparece en un frame. ByteTrack pierde el ID por
@@ -128,20 +140,22 @@ ventana de gracia y usa el archivo de Diego solo para contrastar.
 
 ---
 
-## 🟡 7. Zonas solapadas: criterio ambiguo
+## 7. Zonas solapadas: criterio ambiguo
 
-`_get_zone_for_point` devuelve la **primera** zona del diccionario que contenga
+**Prioridad: baja**
+
+`_get_zone_for_point` devuelve la primera zona del diccionario que contenga
 el punto, o sea que depende del orden de lectura del JSON. Hoy los polígonos no
 se solapan y no se nota, pero en cuanto alguien defina una góndola dentro de un
 pasillo el resultado cambia según el orden del archivo.
 
-El módulo 1 resuelve el solape con una regla explícita: **la góndola gana sobre
-el pasillo**, porque lo que interesa es la interacción con el estante, no el
+El módulo 1 resuelve el solape con una regla explícita: la góndola gana sobre
+el pasillo, porque lo que interesa es la interacción con el estante, no el
 tránsito. Cubierto por `test_gondola_gana_sobre_pasillo_en_solape`.
 
 ---
 
-## ✅ 8. Lo que sí encaja bien
+## 8. Lo que sí encaja bien
 
 Vale la pena dejarlo dicho porque son las decisiones que hay que sostener:
 
@@ -165,7 +179,7 @@ Vale la pena dejarlo dicho porque son las decisiones que hay que sostener:
 4. Juan quita la resolución quemada (punto 5) — solo si Scapder manda otro video.
 5. Diego evalúa la ventana de gracia (punto 6) — mejora la calidad del dato.
 
-Y una pregunta para la reunión con Scapder: **si nos van a facilitar un set
-anonimizado, ¿podemos pedir que incluya keypoints de pose?** Con eso el módulo 1
+Y una pregunta para la reunión con Scapder: si nos van a facilitar un set
+anonimizado, ¿podemos pedir que incluya keypoints de pose? Con eso el módulo 1
 pasa a `--modo-alcance pose` sin tocar la máquina de estados, y la exactitud de
 pick-up / put-back sube bastante.
