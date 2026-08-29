@@ -168,13 +168,3 @@ Vale la pena dejarlo dicho porque son las decisiones que hay que sostener:
   viabilidad edge del reto.
 - El catálogo de `zone_id` coincide entre el módulo 4 y el validador del
   módulo 8.
-
----
-
-## Orden sugerido para la próxima reunión
-
-1. Decidir quién habla con el validador (punto 2) — bloquea al módulo 6.
-2. Paula arregla los imports (punto 1) — bloquea a todos.
-3. Borrar el `zonas.json` duplicado (punto 3) — 2 minutos, evita un bug feo.
-4. Juan quita la resolución quemada (punto 5) — solo si Scapder manda otro video.
-5. Diego evalúa la ventana de gracia (punto 6) — mejora la calidad del dato.
