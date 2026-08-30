@@ -69,18 +69,39 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def load_fps(input_path: Path) -> float:
-    """Obtiene FPS desde el archivo .meta.json generado por deteccion."""
+def load_metadata(input_path: Path) -> dict:
+    """Obtiene metadata del archivo .meta.json generado por deteccion."""
 
     meta_path = input_path.with_suffix(".meta.json")
 
     if not meta_path.exists():
-        return 30.0
+        return {}
 
     with meta_path.open("r", encoding="utf-8") as fh:
-        meta = json.load(fh)
+        return json.load(fh)
 
+
+def load_fps(input_path: Path) -> float:
+    """Obtiene FPS desde el archivo .meta.json generado por deteccion."""
+
+    meta = load_metadata(input_path)
     return float(meta.get("fps_origen", 30.0))
+
+
+def load_frame_shape(input_path: Path) -> tuple[int, int, int]:
+    """
+    Obtiene la resolucion del frame desde el metadata de deteccion.
+
+    Returns:
+        Tupla (alto, ancho, canales).
+    """
+
+    meta = load_metadata(input_path)
+
+    width = int(meta.get("frame_width", 1280))
+    height = int(meta.get("frame_height", 720))
+
+    return (height, width, 3)
 
 
 def main() -> None:
@@ -99,6 +120,9 @@ def main() -> None:
     fps = args.frame_rate if args.frame_rate is not None else load_fps(
         input_path
     )
+
+    frame_shape = load_frame_shape(input_path)
+    height, width = frame_shape[:2]
 
     tracker = PersonTracker(
         track_buffer=args.track_buffer,
@@ -131,7 +155,7 @@ def main() -> None:
 
             tracked = tracker.update(
                 detections,
-                frame_shape=(576, 768, 3),
+                frame_shape=frame_shape,
             )
 
             for person in tracked:
@@ -156,6 +180,7 @@ def main() -> None:
             frames_processed += 1
 
     print(f"[ok] FPS utilizado: {fps}")
+    print(f"[ok] Resolucion utilizada: {width}x{height}")
     print(f"[ok] Frames procesados: {frames_processed}")
     print(f"[ok] Tracks generados: {total_tracks}")
     print(f"[ok] Personas únicas identificadas: {len(unique_ids)}")
