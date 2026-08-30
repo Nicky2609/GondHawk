@@ -16,7 +16,7 @@ Este README es la **única** fuente de documentación del módulo.
 Dentro del ecosistema de GondHawk, este módulo:
 
 - **Calcula el tiempo de permanencia** (`dwell_time`) de cada `track` dentro
-  de cada zona de góndola definida en `zonas.json`.
+  de cada zona de góndola definida en el catálogo oficial de zonas del proyecto.
 - **Filtra / clasifica ruido** mediante un umbral configurable (`--min-dwell`):
   distingue entre una persona que solo pasó de largo y una que se detuvo.
 - **Separa los estados** de entrada y salida de una zona para medir, de forma
@@ -56,23 +56,22 @@ sin cargar el archivo completo en memoria. Cada línea tiene la forma:
 - Por ello `DwellTimeAnalyzer.process_frame(timestamp_ms, tracks)` **no recibe**
   `frame_id`.
 
-### 2.3 Entrada: `zonas.json` — fuente única de zonas (Integrante 4)
+### 2.3 Entrada: catálogo oficial de zonas — fuente única (Integrante 4)
 
-`zonas.json` es la **única** fuente de verdad de las coordenadas poligonales de
+El módulo usa por defecto el archivo unificado:
+`mapas_de_calor/config/zonas.json`.
+
+Este archivo es la **única** fuente de verdad de las coordenadas poligonales de
 cada zona. El integrante 5 **no** hardcodea zonas. El módulo las carga en
 tiempo de ejecución; esto permite reemplazar el archivo por el que genere el
 Integrante 4 **sin modificar el código**. Estructura:
 
 ```json
 {
-  "metadata": { "frame_width": 768, "frame_height": 576 },
-  "zones": {
-    "gondola_1": {
-      "name": "Góndola Frente Izquierda",
-      "type": "polygon",
-      "vertices": [[x1, y1], [x2, y2], ...]
-    }
-  }
+  "zonas": [
+    {"zone_id": "gondola_A1", "poligono": [[x1, y1], [x2, y2], ...]},
+    {"zone_id": "pasillo_central", "poligono": [[x1, y1], [x2, y2], ...]}
+  ]
 }
 ```
 
@@ -152,6 +151,11 @@ descartemos los eventos cortos en disco. Por tanto, en `dwell_time.jsonl`
 **coexisten** registros con `detuvo: true` y con `detuvo: false`; el consumidor
 (backend / Integrante 1) decide cómo usar el flag.
 
+Además, el analizador soporta un margen de tolerancia configurable:
+`--gracia-frames`. Si un `track` desaparece momentáneamente de una zona,
+se mantiene el evento vivo hasta ese número de frames consecutivos sin visión
+antes de cerrarlo formalmente; si reaparece antes de eso, el conteo continúa.
+
 ---
 
 ## 4. Estructura de la Salida
@@ -160,13 +164,13 @@ El resultado se escribe en `output/dwell_time.jsonl`, una línea JSON por
 evento. Ejemplo real de una línea:
 
 ```json
-{"track_id": "1", "zone_id": "gondola_1", "dwell_time_s": 3.5, "timestamp_ms": 1000.0, "detuvo": true}
+{"track_id": "1", "zone_id": "gondola_A1", "dwell_time_s": 3.5, "timestamp_ms": 1000.0, "detuvo": true}
 ```
 
 | Campo             | Tipo    | Descripción                                                     |
 |-------------------|---------|-----------------------------------------------------------------|
 | `track_id`        | string  | `str(person_id)` — identificador del track                      |
-| `zone_id`         | string  | Identificador de la zona donde se registró el dwell             |
+| `zone_id`         | string  | Identificador oficial de la zona donde se registró el dwell     |
 | `dwell_time_s`    | float   | Tiempo de permanencia en **segundos** (redondeado a 2 decimales)|
 | `timestamp_ms`    | float   | `timestamp_ms` de **entrada** a la zona (inicio del dwell)      |
 | `detuvo`          | boolean | `true` si `dwell_time_s >= min_dwell`, `false` en caso contrario|
@@ -191,9 +195,10 @@ Desde la **raíz del proyecto**:
 ```bash
 python tiempo_permanencia/src/dwell_time.py \
     --input tracking/output/tracking.jsonl \
-    --zonas tiempo_permanencia/zonas.json \
+    --zonas mapas_de_calor/config/zonas.json \
     --output tiempo_permanencia/output/dwell_time.jsonl \
-    --min-dwell 2.0
+    --min-dwell 2.0 \
+    --gracia-frames 2
 ```
 
 Parámetros:
@@ -201,9 +206,10 @@ Parámetros:
 | Parámetro    | Descripción                                        |
 |--------------|----------------------------------------------------|
 | `--input`    | Ruta a `tracking.jsonl` (salida del Integrante 3)  |
-| `--zonas`    | Ruta a `zonas.json` (fuente única de zonas)        |
+| `--zonas`    | Ruta al catálogo oficial de zonas (default: `mapas_de_calor/config/zonas.json`) |
 | `--output`   | Ruta de salida de `dwell_time.jsonl`               |
 | `--min-dwell`| Umbral mínimo en segundos (default: `2.0`)         |
+| `--gracia-frames` | Frames consecutivos sin ver el track antes de cerrar el dwell (default: `2`) |
 
 ---
 
