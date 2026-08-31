@@ -1,0 +1,19 @@
+# Pipeline — Módulo 6 (Laura)
+# Estas dependencias son la unión de todos los módulos que integra el pipeline.
+# Se instalan una sola vez y cubren todo el proyecto.
+
+# Detección de personas + Tracking (Módulos 2 y 3 — Samuel y Juan)
+ultralytics>=8.4.0
+
+# Procesamiento de imagen y video
+opencv-python>=4.8.0
+
+# Heatmap (Módulo 4 — Arturo)
+numpy>=1.24.0
+matplotlib>=3.7.0
+
+# Tiempo de permanencia (Módulo 5 — Diego)
+# (usa opencv y numpy, ya listados)
+
+# Detección de eventos (Módulo 1 — Nicol)
+# (usa solo stdlib + los paquetes ya listados)

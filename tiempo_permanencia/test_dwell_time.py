@@ -66,7 +66,6 @@ def test_entra_sale_antes_del_umbral():
     assert e["dwell_time_s"] < 2.0, f"dwell {e['dwell_time_s']} debería ser < 2s"
     assert e["detuvo"] is False, "debería ser detuvo=False"
     print(f"  ✓ detuvo=False, dwell={e['dwell_time_s']}s tienes < 2s")
-    return True
 
 
 def test_permanece_mas_del_umbral():
@@ -83,7 +82,6 @@ def test_permanece_mas_del_umbral():
     assert events[0]["detuvo"] is True, "debería ser detuvo=True"
     assert events[0]["dwell_time_s"] >= 2.0
     print(f"  ✓ detuvo=True, dwell={events[0]['dwell_time_s']}s >= 2s")
-    return True
 
 
 def test_permanece_exactamente_el_umbral():
@@ -100,7 +98,6 @@ def test_permanece_exactamente_el_umbral():
     assert events[0]["detuvo"] is True, "umbral exacto debe ser detuvo=True (>=)"
     assert events[0]["dwell_time_s"] >= 2.0
     print(f"  ✓ umbral exacto (2.0s) → detuvo=True")
-    return True
 
 
 def test_permanece_hasta_eof():
@@ -119,7 +116,6 @@ def test_permanece_hasta_eof():
     assert e["dwell_time_s"] == 3.0, f"Se esperaba 3.0s, se obtuvo {e['dwell_time_s']}"
     assert e["timestamp_ms"] == 0.0, "timestamp_ms es el momento de entrada"
     print(f"  ✓ EOF: dwell={e['dwell_time_s']}s, detuvo={e['detuvo']}")
-    return True
 
 
 def test_cambia_de_zona():
@@ -151,7 +147,6 @@ def test_cambia_de_zona():
     assert e2["dwell_time_s"] == 2.5, "z2 1500→4000 = 2.5s"
     assert e2["detuvo"] is True, "z2 2.5s debe ser detuvo=True"
     print("  ✓ cambio de zona: cierra z1 (1.5s) y abre z2 (2.5s)")
-    return True
 
 
 def test_dos_personas_misma_zona():
@@ -171,7 +166,6 @@ def test_dos_personas_misma_zona():
         assert e["dwell_time_s"] == 3.0
         assert e["detuvo"] is True
     print("  ✓ dos personas simultáneas: 2 eventos, detuvo=True")
-    return True
 
 
 def test_zona_invalida_sin_vertices():
@@ -184,7 +178,7 @@ def test_zona_invalida_sin_vertices():
     except ZoneConfigError as exc:
         assert "gondola_bad" in str(exc), f"Mensaje debe nombrar la zona: {exc}"
         print(f"  ✓ error explícito para zona sin vértices: {exc}")
-        return True
+        return
     raise AssertionError("Debería haber lanzado ZoneConfigError")
 
 
@@ -198,7 +192,6 @@ def test_track_id_string():
     assert e["track_id"] == "42", f"track_id debe ser '42', se obtuvo {e['track_id']!r}"
     assert isinstance(e["track_id"], str), "track_id debe ser string"
     print(f"  ✓ track_id='42' (string), type={type(e['track_id']).__name__}")
-    return True
 
 
 def test_centroide_punto_medio():
@@ -208,7 +201,6 @@ def test_centroide_punto_medio():
     assert centroid[0] == 150.0, f"center_x esperado 150, se obtuvo {centroid[0]}"
     assert centroid[1] == 100.0, f"center_y esperado 100, se obtuvo {centroid[1]}"
     print(f"  ✓ centroide punto medio: ({centroid[0]}, {centroid[1]})")
-    return True
 
 
 def test_frame_id_no_necesario():
@@ -228,7 +220,6 @@ def test_frame_id_no_necesario():
         "dwell calculado solo con timestamp_ms, sin frame_id"
     )
     print("  ✓ frame_id NO participa: dwell=3.0s calculado solo con timestamp_ms")
-    return True
 
 
 def test_grace_frames_toleran_oclusion_transitoria():
@@ -252,7 +243,6 @@ def test_grace_frames_toleran_oclusion_transitoria():
     assert e["dwell_time_s"] == 3.5, f"Se esperaba 3.5s, se obtuvo {e['dwell_time_s']}"
     assert e["detuvo"] is True
     print("  ✓ gracia de frames: la oclusión breve se tolera y el dwell continúa")
-    return True
 
 
 # ---------------------------------------------------------------------------
@@ -271,25 +261,19 @@ def test_firma_process_frame_sin_frame_id():
         f"Firma inesperada: {params}"
     )
     print(f"  ✓ process_frame firma: process_frame({', '.join(params[1:])})")
-    return True
 
 
 def test_load_zones():
     """Cargar el catálogo unificado de zonas del proyecto."""
     zones_path = Path(__file__).resolve().parents[1] / "mapas_de_calor" / "config" / "zonas.json"
-    if not zones_path.exists():
-        print(f"❌ No existe el catálogo oficial: {zones_path}")
-        return False
+    assert zones_path.exists(), f"No existe el catálogo oficial: {zones_path}"
 
     zones = load_zones_from_json(zones_path)
-    if not zones:
-        print("❌ No se cargaron zonas")
-        return False
+    assert zones, "No se cargaron zonas"
 
     print(f"✓ Zonas cargadas: {len(zones)}")
     for zone_id in zones:
         print(f"  - {zone_id}")
-    return True
 
 
 def test_trajectory_reader():
@@ -322,7 +306,6 @@ def test_trajectory_reader():
         tid = TrajectoryReader.get_track_id(1)
         assert tid == "1" and isinstance(tid, str)
         print(f"✓ TrajectoryReader: {len(records)} frames, track_id='{tid}'")
-        return True
     finally:
         temp_path.unlink()
 
@@ -363,7 +346,6 @@ def test_output_format_contracto():
         "Debe haber registros con detuvo=True y detuvo=False"
     )
     print(f"  ✓ Contrato exacto + coexisten detuvo=True/False: {sorted(detuvo_values)}")
-    return True
 
 
 # ---------------------------------------------------------------------------

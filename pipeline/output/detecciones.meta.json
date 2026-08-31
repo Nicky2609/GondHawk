@@ -1,0 +1,10 @@
+{
+  "video_source": "data/vtest.avi",
+  "fps_origen": 10.0,
+  "frame_width": 768,
+  "frame_height": 576,
+  "frame_count": 795,
+  "frames_procesados": 795,
+  "total_detecciones": 4576,
+  "tiempo_procesamiento_seg": 35.47
+}
