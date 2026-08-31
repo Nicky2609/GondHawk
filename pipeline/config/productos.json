@@ -1,0 +1,10 @@
+{
+  "descripcion": "Mapa de zone_id a SKU de producto. Usado por el pipeline (módulo 6) para enriquecer los eventos_compliance.jsonl con el campo product_id que exige el validador del módulo 8.",
+  "productos": {
+    "gondola_A1": "SKU-001",
+    "gondola_A2": "SKU-002",
+    "gondola_A3": "SKU-003",
+    "gondola_B1": "SKU-004",
+    "pasillo_central": null
+  }
+}
