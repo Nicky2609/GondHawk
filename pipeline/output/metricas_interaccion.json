@@ -1,0 +1,113 @@
+{
+  "total": {
+    "visitas": 104,
+    "se_detiene": 64,
+    "toma_producto": 0,
+    "devuelve": 0,
+    "se_lo_lleva": 0,
+    "tasa_interaccion": 0.0,
+    "tasa_rechazo": 0.0
+  },
+  "zonas": [
+    {
+      "zone_id": "gondola_A1",
+      "personas_unicas": 9,
+      "embudo": {
+        "visitas": 9,
+        "pasa_de_largo": 0,
+        "se_detiene": 9,
+        "toma_producto": 0,
+        "devuelve": 0,
+        "se_lo_lleva": 0
+      },
+      "tasa_detencion": 1.0,
+      "tasa_interaccion": 0.0,
+      "tasa_rechazo": 0.0,
+      "tasa_conversion": 0.0,
+      "dwell_promedio_s": 2.0,
+      "temperatura": "fria"
+    },
+    {
+      "zone_id": "gondola_A2",
+      "personas_unicas": 20,
+      "embudo": {
+        "visitas": 22,
+        "pasa_de_largo": 6,
+        "se_detiene": 16,
+        "toma_producto": 0,
+        "devuelve": 0,
+        "se_lo_lleva": 0
+      },
+      "tasa_detencion": 0.7273,
+      "tasa_interaccion": 0.0,
+      "tasa_rechazo": 0.0,
+      "tasa_conversion": 0.0,
+      "dwell_promedio_s": 2.0,
+      "temperatura": "fria"
+    },
+    {
+      "zone_id": "gondola_A3",
+      "personas_unicas": 25,
+      "embudo": {
+        "visitas": 40,
+        "pasa_de_largo": 24,
+        "se_detiene": 16,
+        "toma_producto": 0,
+        "devuelve": 0,
+        "se_lo_lleva": 0
+      },
+      "tasa_detencion": 0.4,
+      "tasa_interaccion": 0.0,
+      "tasa_rechazo": 0.0,
+      "tasa_conversion": 0.0,
+      "dwell_promedio_s": 2.02,
+      "temperatura": "fria"
+    },
+    {
+      "zone_id": "gondola_B1",
+      "personas_unicas": 24,
+      "embudo": {
+        "visitas": 33,
+        "pasa_de_largo": 10,
+        "se_detiene": 23,
+        "toma_producto": 0,
+        "devuelve": 0,
+        "se_lo_lleva": 0
+      },
+      "tasa_detencion": 0.697,
+      "tasa_interaccion": 0.0,
+      "tasa_rechazo": 0.0,
+      "tasa_conversion": 0.0,
+      "dwell_promedio_s": 2.0,
+      "temperatura": "fria"
+    }
+  ],
+  "alertas": [
+    {
+      "zone_id": "gondola_A1",
+      "tipo": "zona_fria",
+      "mensaje": "9 visitas y solo 0 interacciones: hay trafico pero el producto no engancha."
+    },
+    {
+      "zone_id": "gondola_A2",
+      "tipo": "zona_fria",
+      "mensaje": "22 visitas y solo 0 interacciones: hay trafico pero el producto no engancha."
+    },
+    {
+      "zone_id": "gondola_A3",
+      "tipo": "zona_fria",
+      "mensaje": "40 visitas y solo 0 interacciones: hay trafico pero el producto no engancha."
+    },
+    {
+      "zone_id": "gondola_B1",
+      "tipo": "zona_fria",
+      "mensaje": "33 visitas y solo 0 interacciones: hay trafico pero el producto no engancha."
+    }
+  ],
+  "meta": {
+    "video_ref": "data/vtest.avi",
+    "frames_procesados": 795,
+    "t0": "2026-08-20T09:00:00",
+    "min_dwell_s": 2.0
+  }
+}
