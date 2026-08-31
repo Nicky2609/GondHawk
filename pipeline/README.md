@@ -159,6 +159,8 @@ Los tests verifican:
 
 ## Cumplimiento de privacidad (Ley 1581 de 2012)
 
+
+
 - **No se guarda ningún frame del video.**
 - **No se guardan recortes de personas ni datos biométricos.**
 - Los `track_id` son IDs opacos de ByteTrack: no permiten identificar a nadie.
