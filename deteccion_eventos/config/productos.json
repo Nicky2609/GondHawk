@@ -1,9 +1,0 @@
-{
-  "_comentario": "Mapa zone_id -> SKU. Los zone_id son los del catalogo oficial del proyecto (mapas_de_calor/config/zonas.json) y los SKU son los que usa el modulo 8 (Paula) en su validador. El SKU debe cumplir el patron ^SKU_[A-Za-z0-9_]+$. pasillo_central no tiene producto asociado a proposito: es zona de transito.",
-  "productos": {
-    "gondola_A1": "SKU_1001_snacks",
-    "gondola_A2": "SKU_1002_bebidas",
-    "gondola_A3": "SKU_1003_lacteos",
-    "gondola_B1": "SKU_1004_aseo"
-  }
-}

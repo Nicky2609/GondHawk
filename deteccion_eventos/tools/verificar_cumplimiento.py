@@ -7,17 +7,16 @@ cumplimiento, lo corremos de verdad sobre el archivo que generamos. Si el
 modulo 8 cambia sus reglas, este script lo detecta antes de la demo y no
 durante.
 
-Nota tecnica: el archivo del modulo 8 viene exportado de Google Colab y
-repite `from __future__ import annotations` en medio del archivo, lo que hace
-que no se pueda importar como modulo normal (en Colab cada celda se ejecuta
-por separado, por eso alli si funciona). Mientras eso no se corrija en el
-repo, este script lo carga quitando esas lineas repetidas. No modifica el
-archivo original.
+Nota tecnica: los archivos del modulo 8 vienen exportados de Google Colab y
+pueden repetir `from __future__ import annotations` en medio del archivo, lo
+que impide importarlos como modulo normal (en Colab cada celda se ejecuta por
+separado, por eso alli si funciona). Este script los carga quitando esas
+lineas repetidas cuando aparecen. No modifica el archivo original.
 
 Uso:
     python deteccion_eventos/tools/verificar_cumplimiento.py \\
         --eventos deteccion_eventos/output/eventos_compliance.jsonl \\
-        --validador untitled10.py
+        --validador validador_recomendador_v3.py
 """
 
 from __future__ import annotations
@@ -31,7 +30,19 @@ from pathlib import Path
 
 def cargar_validador(ruta: Path):
     codigo = ruta.read_text(encoding="utf-8")
-    limpio = codigo.replace("from __future__ import annotations\n", "")
+
+    # Se conserva el PRIMER "from __future__" (es valido y necesario) y se
+    # quitan solo los repetidos mas abajo, que son los que rompen la
+    # importacion. Antes se quitaban todos, asi que el aviso salia incluso
+    # con archivos correctos.
+    marca = "from __future__ import annotations\n"
+    primero = codigo.find(marca)
+    if primero == -1:
+        limpio = codigo
+    else:
+        corte = primero + len(marca)
+        limpio = codigo[:corte] + codigo[corte:].replace(marca, "")
+
     if limpio != codigo:
         print(
             "[aviso] Se quitaron imports '__future__' repetidos para poder cargar "
@@ -57,8 +68,8 @@ def main() -> None:
     parser.add_argument("--eventos", required=True, help="JSONL a validar")
     parser.add_argument(
         "--validador",
-        default="untitled10.py",
-        help="ruta al archivo del modulo 8 (default: untitled10.py en la raiz)",
+        default="validador_recomendador_v3.py",
+        help="ruta al validador del modulo 8 (default: validador_recomendador_v3.py)",
     )
     args = parser.parse_args()
 

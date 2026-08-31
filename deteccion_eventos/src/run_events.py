@@ -27,6 +27,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import sys
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -63,7 +64,25 @@ def leer_tracking(ruta: Path) -> Iterator[dict[str, Any]]:
                 ) from None
 
 
+PATRON_SKU = re.compile(r"^SKU_[A-Za-z0-9_]+$")
+
+
 def cargar_productos(ruta: Path | None) -> dict[str, str]:
+    """
+    Carga el mapa zone_id -> SKU.
+
+    Dos reglas que existen por errores reales encontrados en el repo:
+
+    - Las zonas sin producto (las de transito, que en el JSON aparecen como
+      `null`) se **omiten**. Antes se hacia `str(v)` sobre todos los valores,
+      lo que convertia `null` en la cadena "None" y esa cadena terminaba
+      escrita como `product_id` en la salida de cumplimiento, donde falla la
+      validacion.
+    - Los SKU que no cumplen el patron del validador del modulo 8
+      (`^SKU_[A-Za-z0-9_]+$`) se avisan por consola en vez de colarse en
+      silencio hasta la validacion final. `SKU-001`, con guion normal, es el
+      caso que se dio.
+    """
     if ruta is None:
         return {}
     ruta = Path(ruta)
@@ -71,7 +90,29 @@ def cargar_productos(ruta: Path | None) -> dict[str, str]:
         raise FileNotFoundError(f"No existe el mapa de productos: {ruta}")
     with ruta.open("r", encoding="utf-8") as fh:
         data = json.load(fh)
-    return {str(k): str(v) for k, v in data.get("productos", data).items()}
+
+    crudos = data.get("productos", data)
+    productos: dict[str, str] = {}
+    invalidos: list[str] = []
+
+    for zone_id, sku in crudos.items():
+        if zone_id.startswith("_"):  # claves de comentario en el JSON
+            continue
+        if sku is None or str(sku).strip() == "":
+            continue  # zona de transito: no lleva producto
+        sku = str(sku).strip()
+        if not PATRON_SKU.match(sku):
+            invalidos.append(f"{zone_id}: {sku}")
+        productos[str(zone_id)] = sku
+
+    if invalidos:
+        print(
+            "[aviso] SKU que no cumplen el patron ^SKU_[A-Za-z0-9_]+$ del "
+            "validador del modulo 8 y haran fallar la validacion: "
+            + ", ".join(invalidos)
+        )
+
+    return productos
 
 
 def a_iso(t0: datetime, timestamp_ms: float) -> str:

@@ -158,13 +158,13 @@ python deteccion_eventos/src/run_events.py \
     --tracking tracking/output/tracking.jsonl \
     --zonas mapas_de_calor/config/zonas.json \
     --dwell tiempo_permanencia/output/dwell_time.jsonl \
-    --productos deteccion_eventos/config/productos.json \
+    --productos pipeline/config/productos.json \
     --outdir deteccion_eventos/output
 
 # 2. Verificar que la salida pasa el validador del módulo 8
 python deteccion_eventos/tools/verificar_cumplimiento.py \
     --eventos deteccion_eventos/output/eventos_compliance.jsonl \
-    --validador untitled10.py
+    --validador validador_recomendador_v3.py
 ```
 
 ### Sin esperar al módulo 3
@@ -194,7 +194,7 @@ python deteccion_eventos/tools/evaluar_exactitud.py \
 | `--tracking` | — | `tracking.jsonl` del módulo 3 |
 | `--zonas` | — | `zonas.json` del módulo 4 (fuente única) |
 | `--dwell` | — | `dwell_time.jsonl` del módulo 5 (opcional) |
-| `--productos` | — | mapa `zone_id → SKU` (opcional) |
+| `--productos` | — | mapa `zone_id → SKU`, en `pipeline/config/productos.json` (opcional) |
 | `--min-dwell` | `2.0` | segundos para considerar que se detuvo (igual al módulo 5) |
 | `--gracia-frames` | `5` | frames que puede desaparecer un track sin cerrar el episodio |
 | `--modo-alcance` | `geometrico` | `geometrico` \| `pose` |
@@ -312,8 +312,6 @@ pose`.
 deteccion_eventos/
 ├── README.md
 ├── requirements.txt
-├── config/
-│   └── productos.json            mapa zone_id → SKU
 ├── src/
 │   ├── zonas.py                  carga de zonas + geometría (sin dependencias)
 │   ├── reach_detector.py         detección de alcance (geométrico / pose)

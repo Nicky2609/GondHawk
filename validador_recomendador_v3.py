@@ -7,22 +7,37 @@ Original file is located at
     https://colab.research.google.com/drive/1qCgFfPWVTQjdCLrpcrkfT_1juWP89BGH
 """
 
-"""
-Validador de cumplimiento / privacidad por diseño — Integrante 8 (Paula)
-HackTech 5.0 2026 — Reto Góndola Inteligente (Scapder)
-
-v2 — corregido tras pruebas con datos inventados. Cambios respecto a v1:
-  1. Ya no basta con que un campo tenga nombre "permitido": ahora se valida
-     también el FORMATO de cada valor (whitelist estricta), para que no se
-     pueda esconder un nombre u otro dato identificable dentro de un campo
-     que en teoría es inocuo (ej. track_id = "Juan Pérez").
-  2. Se valida tipo/rango de dwell_time_s, formato ISO de timestamp y que
-     event_type sea uno de los valores acordados por el equipo.
-  3. Se agrega filtrar_eventos_validos(), para que el motor de
-     recomendación NUNCA reciba un evento que no haya pasado el filtro.
-"""
-
 from __future__ import annotations
+
+# ---------------------------------------------------------------------
+# Validador de cumplimiento / privacidad por diseño — Integrante 8 (Paula)
+# HackTech 5.0 2026 — Reto Góndola Inteligente (Scapder)
+#
+# v3 — actualizado tras confirmar el contrato de datos real con los módulos
+# 3 (Juan, tracking) y 4 (Arturo, mapas de calor/zonas). Cambios respecto a v2:
+#   1. zone_id ahora valida contra el catálogo CERRADO de zonas
+#      (config/zonas.json del módulo 4), no solo el formato de caracteres.
+#      Antes cualquier string alfanumérico con guion bajo pasaba, aunque la
+#      zona no existiera.
+#   2. Se documenta que track_id = str(person_id) del módulo 3/4 siempre
+#      pasa el regex hex (los dígitos decimales son hex válidos), pero que
+#      person_id se reinicia en cada corrida de tracking: si el módulo 6
+#      no le agrega un prefijo de sesión, track_id se puede repetir entre
+#      videos/días distintos. Esto no es un problema de privacidad, es un
+#      problema de integridad de datos para las métricas — queda anotado
+#      para que el equipo lo resuelva en el módulo 6.
+#
+# Cambios de v1 a v2 (se mantienen):
+#   1. Ya no basta con que un campo tenga nombre "permitido": ahora se valida
+#      también el FORMATO de cada valor (whitelist estricta), para que no se
+#      pueda esconder un nombre u otro dato identificable dentro de un campo
+#      que en teoría es inocuo (ej. track_id = "Juan Pérez").
+#   2. Se valida tipo/rango de dwell_time_s, formato ISO de timestamp y que
+#      event_type sea uno de los valores acordados por el equipo.
+#   3. Se agrega filtrar_eventos_validos(), para que el motor de
+#      recomendación NUNCA reciba un evento que no haya pasado el filtro.
+# ---------------------------------------------------------------------
+
 import re
 from datetime import datetime
 
@@ -41,9 +56,16 @@ PATRONES_SOSPECHOSOS = [
 
 EVENT_TYPES_VALIDOS = {"approach", "pickup", "return", "pass_by"}
 
+# Catálogo cerrado de zonas, alineado con config/zonas.json del módulo 4
+# (Arturo). Si el equipo agrega una zona nueva, se cambia en este único
+# lugar — antes el validador aceptaba cualquier string alfanumérico,
+# existiera o no la zona.
+ZONAS_VALIDAS = {
+    "gondola_A1", "gondola_A2", "gondola_A3", "pasillo_central", "gondola_B1",
+}
+
 FORMATOS_CAMPOS_PERMITIDOS = {
     "track_id": re.compile(r"^[0-9a-fA-F]{1,8}(-[0-9a-fA-F]{1,12}){0,4}$"),
-    "zone_id": re.compile(r"^[A-Za-z0-9_]+$"),
     "product_id": re.compile(r"^SKU_[A-Za-z0-9_]+$"),
 }
 
@@ -51,6 +73,10 @@ FORMATOS_CAMPOS_PERMITIDOS = {
 def _campo_tiene_formato_valido(campo: str, valor) -> bool:
     if campo == "event_type":
         return valor in EVENT_TYPES_VALIDOS
+
+    if campo == "zone_id":
+        # antes: solo regex de caracteres -> dejaba pasar zonas inexistentes
+        return isinstance(valor, str) and valor in ZONAS_VALIDAS
 
     if campo == "dwell_time_s":
         return isinstance(valor, (int, float)) and not isinstance(valor, bool) and valor >= 0
@@ -65,6 +91,10 @@ def _campo_tiene_formato_valido(campo: str, valor) -> bool:
             return False
 
     if campo == "bbox":
+        # TODO: confirmar con el equipo si este campo realmente viaja hasta
+        # acá. Los eventos reales que arma el módulo 6 no lo incluyen; si
+        # nadie lo necesita, quitarlo de CAMPOS_PERMITIDOS reduce superficie
+        # de riesgo innecesaria.
         return (
             isinstance(valor, (list, tuple))
             and len(valor) == 4
@@ -147,17 +177,6 @@ def filtrar_eventos_validos(eventos: list[dict]) -> tuple[list[dict], dict]:
     eventos_validos = [e for i, e in enumerate(eventos) if i not in indices_malos]
     return eventos_validos, reporte
 
-    registro_mal = {
-        "track_id": "Juan Pérez",
-        "zone_id": "gondola_A3",
-        "event_type": "camina_raro",
-        "dwell_time_s": "doce segundos",
-    }
-
-    print("=== Registro correcto ===")
-    print(validar_registro(registro_ok))
-    print("\n=== Registro con violaciones (antes se colaban, ahora no) ===")
-    print(validar_registro(registro_mal))
 
 """
 Datos inventados para poner a prueba el módulo del Integrante 8 (Paula).
@@ -233,9 +252,37 @@ eventos_violacion_escondida = [
     # event_type inventado, que no está en el esquema acordado
     {"track_id": "c5", "zone_id": "gondola_A2", "product_id": "SKU_1002_bebidas",
      "event_type": "mira_de_reojo", "dwell_time_s": 3.0, "timestamp": "2026-08-20T09:41:00"},
+
+    # NUEVO caso de prueba: zona que no existe en el catálogo (típo/zona
+    # nueva sin registrar) -> antes esto pasaba el validador, ahora no.
+    {"track_id": "c6", "zone_id": "bodega_1", "product_id": "SKU_1004_aseo",
+     "event_type": "approach", "dwell_time_s": 4.0, "timestamp": "2026-08-20T09:45:00"},
 ]
 
 TODOS_LOS_EVENTOS = eventos_limpios + eventos_violacion_obvia + eventos_violacion_escondida
+
+
+def _demo_validador():
+    """Pequeña demo del validador (reemplaza al bloque suelto que había
+    después de filtrar_eventos_validos en el notebook original, el cual
+    nunca se ejecutaba por estar después de un return)."""
+    registro_ok = eventos_limpios[0]
+    registro_mal = {
+        "track_id": "Juan Pérez",
+        "zone_id": "gondola_A3",
+        "event_type": "camina_raro",
+        "dwell_time_s": "doce segundos",
+    }
+
+    print("=== Registro correcto ===")
+    print(validar_registro(registro_ok))
+    print("\n=== Registro con violaciones (antes se colaban, ahora no) ===")
+    print(validar_registro(registro_mal))
+
+    print("\n=== Reporte del lote completo (incluye zona inexistente) ===")
+    _, reporte = filtrar_eventos_validos(TODOS_LOS_EVENTOS)
+    print(f"Total: {reporte['total_eventos']}  No conformes: {reporte['eventos_no_conformes']}")
+
 
 """
 Motor de recomendación — Integrante 8 (Paula)
@@ -248,20 +295,27 @@ Etapa 0 (esquema JSON común).
 
 Esquema de evento acordado (sin datos identificables):
 {
-    "track_id": str,        # UUID anónimo asignado por el módulo de tracking
-    "zone_id": str,         # ej. "gondola_A3"
+    "track_id": str,        # id anónimo del módulo de tracking (str(person_id)
+                            # del módulo 3/4, o UUID en los datos simulados)
+    "zone_id": str,         # ej. "gondola_A3" — debe estar en ZONAS_VALIDAS
     "product_id": str,      # ej. "SKU_1029"
     "event_type": str,      # "approach" | "pickup" | "return" | "pass_by"
     "dwell_time_s": float,  # segundos de permanencia frente a la góndola
     "timestamp": str        # ISO 8601
 }
+
+NOTA de integración (módulo 6, Laura): person_id del módulo 3 se reinicia
+en cada corrida de tracking. Si dos videos/sesiones distintas se procesan
+sin un prefijo de sesión, track_id = str(person_id) puede repetirse entre
+sesiones y mezclar personas distintas en las métricas. No es un problema
+de privacidad, pero conviene resolverlo antes de unir datos de varios
+días (por ejemplo, con track_id = f"{session_id}_{person_id}").
 """
 
-from __future__ import annotations
 import random
 import uuid
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta
+from datetime import timedelta
 from collections import defaultdict
 
 
@@ -436,11 +490,13 @@ def generar_recomendaciones(metricas: dict[str, MetricasZona]) -> list[dict]:
 
 
 if __name__ == "__main__":
+    _demo_validador()
+
     eventos = generar_eventos_simulados()
     metricas = calcular_metricas(eventos)
     recos = generar_recomendaciones(metricas)
 
-    print("=== Métricas por zona (datos simulados) ===")
+    print("\n=== Métricas por zona (datos simulados) ===")
     for m in metricas.values():
         print(f"{m.zona:18} interacción={m.tasa_interaccion:6.1%}  "
               f"conversión={m.tasa_conversion:6.1%}  rechazo={m.tasa_rechazo:6.1%}  "

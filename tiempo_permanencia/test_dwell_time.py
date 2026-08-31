@@ -53,7 +53,7 @@ def track(person_id: int, bbox: list[float]) -> dict:
 
 def test_entra_sale_antes_del_umbral():
     """1. Persona entra y sale antes del umbral → detuvo == False"""
-    analyzer = DwellTimeAnalyzer(ZONE_1, min_dwell_ms=2000.0)
+    analyzer = DwellTimeAnalyzer(ZONE_1, min_dwell_ms=2000.0, grace_frames=0)
     bbox = [150.0, 100.0, 200.0, 150.0]  # centroide [175, 125] en zona
 
     analyzer.process_frame(0.0, [track(1, bbox)])
@@ -66,12 +66,11 @@ def test_entra_sale_antes_del_umbral():
     assert e["dwell_time_s"] < 2.0, f"dwell {e['dwell_time_s']} debería ser < 2s"
     assert e["detuvo"] is False, "debería ser detuvo=False"
     print(f"  ✓ detuvo=False, dwell={e['dwell_time_s']}s tienes < 2s")
-    return True
 
 
 def test_permanece_mas_del_umbral():
     """2. Persona permanece más que el umbral → detuvo == True"""
-    analyzer = DwellTimeAnalyzer(ZONE_1, min_dwell_ms=2000.0)
+    analyzer = DwellTimeAnalyzer(ZONE_1, min_dwell_ms=2000.0, grace_frames=0)
     bbox = [150.0, 100.0, 200.0, 150.0]
 
     analyzer.process_frame(0.0, [track(1, bbox)])
@@ -83,12 +82,11 @@ def test_permanece_mas_del_umbral():
     assert events[0]["detuvo"] is True, "debería ser detuvo=True"
     assert events[0]["dwell_time_s"] >= 2.0
     print(f"  ✓ detuvo=True, dwell={events[0]['dwell_time_s']}s >= 2s")
-    return True
 
 
 def test_permanece_exactamente_el_umbral():
     """3. Persona permanece exactamente el umbral → detuvo == True"""
-    analyzer = DwellTimeAnalyzer(ZONE_1, min_dwell_ms=2000.0)
+    analyzer = DwellTimeAnalyzer(ZONE_1, min_dwell_ms=2000.0, grace_frames=0)
     bbox = [150.0, 100.0, 200.0, 150.0]
 
     analyzer.process_frame(0.0, [track(1, bbox)])
@@ -100,12 +98,11 @@ def test_permanece_exactamente_el_umbral():
     assert events[0]["detuvo"] is True, "umbral exacto debe ser detuvo=True (>=)"
     assert events[0]["dwell_time_s"] >= 2.0
     print(f"  ✓ umbral exacto (2.0s) → detuvo=True")
-    return True
 
 
 def test_permanece_hasta_eof():
     """4. Persona entra y permanece hasta EOF → finalize calcula el dwell"""
-    analyzer = DwellTimeAnalyzer(ZONE_1, min_dwell_ms=2000.0)
+    analyzer = DwellTimeAnalyzer(ZONE_1, min_dwell_ms=2000.0, grace_frames=0)
     bbox = [150.0, 100.0, 200.0, 150.0]
 
     analyzer.process_frame(0.0, [track(1, bbox)])
@@ -119,7 +116,6 @@ def test_permanece_hasta_eof():
     assert e["dwell_time_s"] == 3.0, f"Se esperaba 3.0s, se obtuvo {e['dwell_time_s']}"
     assert e["timestamp_ms"] == 0.0, "timestamp_ms es el momento de entrada"
     print(f"  ✓ EOF: dwell={e['dwell_time_s']}s, detuvo={e['detuvo']}")
-    return True
 
 
 def test_cambia_de_zona():
@@ -128,7 +124,7 @@ def test_cambia_de_zona():
         "gondola_A1": {"vertices": [[100, 50], [350, 50], [350, 450], [100, 450]]},
         "gondola_A2": {"vertices": [[400, 50], [650, 50], [650, 450], [400, 450]]},
     }
-    analyzer = DwellTimeAnalyzer(zones, min_dwell_ms=2000.0)
+    analyzer = DwellTimeAnalyzer(zones, min_dwell_ms=2000.0, grace_frames=0)
 
     bbox_z1 = [150.0, 100.0, 200.0, 150.0]   # centroide [175,125] → z1
     bbox_z2 = [450.0, 100.0, 500.0, 150.0]   # centroide [475,125] → z2
@@ -151,12 +147,11 @@ def test_cambia_de_zona():
     assert e2["dwell_time_s"] == 2.5, "z2 1500→4000 = 2.5s"
     assert e2["detuvo"] is True, "z2 2.5s debe ser detuvo=True"
     print("  ✓ cambio de zona: cierra z1 (1.5s) y abre z2 (2.5s)")
-    return True
 
 
 def test_dos_personas_misma_zona():
     """6. Dos personas simultáneamente en la misma zona"""
-    analyzer = DwellTimeAnalyzer(ZONE_1, min_dwell_ms=2000.0)
+    analyzer = DwellTimeAnalyzer(ZONE_1, min_dwell_ms=2000.0, grace_frames=0)
     bbox = [150.0, 100.0, 200.0, 150.0]
 
     analyzer.process_frame(0.0, [track(1, bbox), track(2, bbox)])
@@ -171,7 +166,6 @@ def test_dos_personas_misma_zona():
         assert e["dwell_time_s"] == 3.0
         assert e["detuvo"] is True
     print("  ✓ dos personas simultáneas: 2 eventos, detuvo=True")
-    return True
 
 
 def test_zona_invalida_sin_vertices():
@@ -184,13 +178,13 @@ def test_zona_invalida_sin_vertices():
     except ZoneConfigError as exc:
         assert "gondola_bad" in str(exc), f"Mensaje debe nombrar la zona: {exc}"
         print(f"  ✓ error explícito para zona sin vértices: {exc}")
-        return True
+        return
     raise AssertionError("Debería haber lanzado ZoneConfigError")
 
 
 def test_track_id_string():
     """8. person_id debe convertirse a string en track_id"""
-    analyzer = DwellTimeAnalyzer(ZONE_1, min_dwell_ms=0.0)
+    analyzer = DwellTimeAnalyzer(ZONE_1, min_dwell_ms=0.0, grace_frames=0)
     bbox = [150.0, 100.0, 200.0, 150.0]
     analyzer.process_frame(0.0, [track(42, bbox)])
     analyzer.process_frame(1000.0, [])
@@ -198,7 +192,6 @@ def test_track_id_string():
     assert e["track_id"] == "42", f"track_id debe ser '42', se obtuvo {e['track_id']!r}"
     assert isinstance(e["track_id"], str), "track_id debe ser string"
     print(f"  ✓ track_id='42' (string), type={type(e['track_id']).__name__}")
-    return True
 
 
 def test_centroide_punto_medio():
@@ -208,13 +201,12 @@ def test_centroide_punto_medio():
     assert centroid[0] == 150.0, f"center_x esperado 150, se obtuvo {centroid[0]}"
     assert centroid[1] == 100.0, f"center_y esperado 100, se obtuvo {centroid[1]}"
     print(f"  ✓ centroide punto medio: ({centroid[0]}, {centroid[1]})")
-    return True
 
 
 def test_frame_id_no_necesario():
     """10. frame_id NO es necesario para calcular dwell"""
     # El procesamiento usa solo timestamp_ms; process_frame NO recibe frame_id.
-    analyzer = DwellTimeAnalyzer(ZONE_1, min_dwell_ms=2000.0)
+    analyzer = DwellTimeAnalyzer(ZONE_1, min_dwell_ms=2000.0, grace_frames=0)
     bbox = [150.0, 100.0, 200.0, 150.0]
 
     # Llamamos process_frame sin frame_id (solo timestamp + tracks)
@@ -228,7 +220,29 @@ def test_frame_id_no_necesario():
         "dwell calculado solo con timestamp_ms, sin frame_id"
     )
     print("  ✓ frame_id NO participa: dwell=3.0s calculado solo con timestamp_ms")
-    return True
+
+
+def test_grace_frames_toleran_oclusion_transitoria():
+    """Grace frames: la oclusión breve no cierra el evento si reaparece antes del umbral."""
+    analyzer = DwellTimeAnalyzer(ZONE_1, min_dwell_ms=1000.0, grace_frames=2)
+    bbox = [150.0, 100.0, 200.0, 150.0]
+
+    analyzer.process_frame(0.0, [track(1, bbox)])
+    analyzer.process_frame(1000.0, [track(1, bbox)])
+    analyzer.process_frame(1500.0, [])
+    analyzer.process_frame(2000.0, [track(1, bbox)])
+    analyzer.process_frame(2500.0, [track(1, bbox)])
+    analyzer.process_frame(3000.0, [])
+    analyzer.process_frame(3500.0, [])
+
+    events = analyzer.get_events()
+    assert len(events) == 1, f"Se esperaba 1 evento, se obtuvieron {len(events)}"
+    e = events[0]
+    assert e["track_id"] == "1"
+    assert e["zone_id"] == "gondola_A1"
+    assert e["dwell_time_s"] == 3.5, f"Se esperaba 3.5s, se obtuvo {e['dwell_time_s']}"
+    assert e["detuvo"] is True
+    print("  ✓ gracia de frames: la oclusión breve se tolera y el dwell continúa")
 
 
 # ---------------------------------------------------------------------------
@@ -247,25 +261,19 @@ def test_firma_process_frame_sin_frame_id():
         f"Firma inesperada: {params}"
     )
     print(f"  ✓ process_frame firma: process_frame({', '.join(params[1:])})")
-    return True
 
 
 def test_load_zones():
-    """Cargar zonas.json"""
-    zones_path = Path(__file__).resolve().parent / "zonas.json"
-    if not zones_path.exists():
-        print("❌ zonas.json no existe")
-        return False
+    """Cargar el catálogo unificado de zonas del proyecto."""
+    zones_path = Path(__file__).resolve().parents[1] / "mapas_de_calor" / "config" / "zonas.json"
+    assert zones_path.exists(), f"No existe el catálogo oficial: {zones_path}"
 
     zones = load_zones_from_json(zones_path)
-    if not zones:
-        print("❌ No se cargaron zonas")
-        return False
+    assert zones, "No se cargaron zonas"
 
     print(f"✓ Zonas cargadas: {len(zones)}")
     for zone_id in zones:
         print(f"  - {zone_id}")
-    return True
 
 
 def test_trajectory_reader():
@@ -298,7 +306,6 @@ def test_trajectory_reader():
         tid = TrajectoryReader.get_track_id(1)
         assert tid == "1" and isinstance(tid, str)
         print(f"✓ TrajectoryReader: {len(records)} frames, track_id='{tid}'")
-        return True
     finally:
         temp_path.unlink()
 
@@ -308,7 +315,7 @@ def test_output_format_contracto():
     required_fields = ["track_id", "zone_id", "dwell_time_s", "timestamp_ms", "detuvo"]
     allowed_fields = set(required_fields)
 
-    analyzer = DwellTimeAnalyzer(ZONE_1, min_dwell_ms=1000.0)
+    analyzer = DwellTimeAnalyzer(ZONE_1, min_dwell_ms=1000.0, grace_frames=0)
     bbox = [150.0, 100.0, 200.0, 150.0]
     # Persona 1: entra 0ms, sale 800ms → dwell 0.8s → detuvo=False
     analyzer.process_frame(0.0, [track(1, bbox)])
@@ -339,7 +346,6 @@ def test_output_format_contracto():
         "Debe haber registros con detuvo=True y detuvo=False"
     )
     print(f"  ✓ Contrato exacto + coexisten detuvo=True/False: {sorted(detuvo_values)}")
-    return True
 
 
 # ---------------------------------------------------------------------------
@@ -372,6 +378,8 @@ def main():
          test_centroide_punto_medio),
         ("frame_id NO necesario para dwell",
          test_frame_id_no_necesario),
+        ("grace frames toleran oclusión transitoria",
+         test_grace_frames_toleran_oclusion_transitoria),
         ("process_frame sin frame_id (firma)",
          test_firma_process_frame_sin_frame_id),
         ("Cargar zonas.json",
@@ -388,15 +396,16 @@ def main():
     for name, test_func in tests:
         print(f"\n▶ {name}")
         try:
-            if test_func():
-                passed += 1
-                print(f"  ✅ PASSED")
-            else:
-                failed += 1
-                print(f"  ❌ FAILED")
+            # Un test pasa si no lanza AssertionError. Antes esto era
+            # "if test_func():", pero las funciones de test no retornan nada:
+            # devolvían None y las 15 se reportaban como FAILED aunque todas
+            # sus assertions pasaran.
+            test_func()
+            passed += 1
+            print("  PASSED")
         except Exception as e:
             failed += 1
-            print(f"  ❌ ERROR: {type(e).__name__}: {e}")
+            print(f"  ERROR: {type(e).__name__}: {e}")
             import traceback
 
             traceback.print_exc()
