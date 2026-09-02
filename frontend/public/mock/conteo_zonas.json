@@ -1,0 +1,36 @@
+{
+  "video_ref": "vtest.avi",
+  "frames_procesados": 795,
+  "zonas": [
+    {
+      "zone_id": "gondola_A1",
+      "visitas_unicas": 9,
+      "frames_ocupada": 236,
+      "pct_tiempo_ocupada": 29.69
+    },
+    {
+      "zone_id": "gondola_A2",
+      "visitas_unicas": 20,
+      "frames_ocupada": 454,
+      "pct_tiempo_ocupada": 57.11
+    },
+    {
+      "zone_id": "gondola_A3",
+      "visitas_unicas": 25,
+      "frames_ocupada": 563,
+      "pct_tiempo_ocupada": 70.82
+    },
+    {
+      "zone_id": "pasillo_central",
+      "visitas_unicas": 8,
+      "frames_ocupada": 149,
+      "pct_tiempo_ocupada": 18.74
+    },
+    {
+      "zone_id": "gondola_B1",
+      "visitas_unicas": 24,
+      "frames_ocupada": 622,
+      "pct_tiempo_ocupada": 78.24
+    }
+  ]
+}

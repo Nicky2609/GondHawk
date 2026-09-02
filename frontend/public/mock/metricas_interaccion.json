@@ -1,0 +1,18 @@
+{
+  "total": {
+    "visitas": 27, "se_detiene": 19, "toma_producto": 16, "devuelve": 7,
+    "se_lo_lleva": 9, "tasa_interaccion": 0.59, "tasa_rechazo": 0.44
+  },
+  "zonas": [
+    {
+      "zone_id": "gondola_A1", "personas_unicas": 5,
+      "embudo": {"visitas": 5, "pasa_de_largo": 1, "se_detiene": 4, "toma_producto": 4, "devuelve": 2, "se_lo_lleva": 2},
+      "tasa_detencion": 0.8, "tasa_interaccion": 1.0, "tasa_rechazo": 0.5, "tasa_conversion": 0.5,
+      "dwell_promedio_s": 3.48, "temperatura": "caliente"
+    }
+  ],
+  "alertas": [
+    {"zone_id": "gondola_A2", "tipo": "zona_fria", "mensaje": "9 visitas y solo 1 interacción: hay tráfico pero el producto no engancha."}
+  ],
+  "meta": {"video_ref": "data/vtest.avi", "frames_procesados": 800, "t0": "2026-08-20T09:00:00", "min_dwell_s": 2.0}
+}
