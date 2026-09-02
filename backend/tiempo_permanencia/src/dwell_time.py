@@ -44,7 +44,7 @@ from typing import Any
 import cv2
 import numpy as np
 
-from trajectory_reader import TrajectoryReader
+from backend.tiempo_permanencia.src.trajectory_reader import TrajectoryReader
 
 DEFAULT_ZONES_PATH = (
     Path(__file__).resolve().parents[2] / "mapas_de_calor" / "config" / "zonas.json"

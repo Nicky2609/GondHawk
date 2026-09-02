@@ -25,7 +25,7 @@ import sys
 # Permite ejecutar el script desde la raiz del proyecto.
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from tracker import PersonTracker
+from backend.tracking.src.tracker import PersonTracker
 
 
 def parse_args() -> argparse.Namespace:

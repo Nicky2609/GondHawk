@@ -50,8 +50,8 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Callable
 
-from reach_detector import BaseReachDetector, Reach, ReachConfig, crear_detector
-from zonas import Layout, centroide_bbox
+from backend.deteccion_eventos.src.reach_detector import BaseReachDetector, Reach, ReachConfig, crear_detector
+from backend.deteccion_eventos.src.zonas import Layout, centroide_bbox
 
 
 class Estado(str, Enum):

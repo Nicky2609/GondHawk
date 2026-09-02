@@ -18,7 +18,7 @@ import json
 from pathlib import Path
 from typing import Any, Iterable
 
-from state_machine import (
+from backend.deteccion_eventos.src.state_machine import (
     EVENTO_APPROACH,
     EVENTO_PASS_BY,
     EVENTO_PICKUP,

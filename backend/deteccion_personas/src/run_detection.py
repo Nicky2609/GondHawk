@@ -23,8 +23,8 @@ from pathlib import Path
 
 import cv2
 
-from person_detector import PersonDetector
-from utils import VideoReader, JsonlWriter, draw_detections
+from backend.deteccion_personas.src.person_detector import PersonDetector
+from backend.deteccion_personas.src.utils import VideoReader, JsonlWriter, draw_detections
 
 
 def parse_args() -> argparse.Namespace:

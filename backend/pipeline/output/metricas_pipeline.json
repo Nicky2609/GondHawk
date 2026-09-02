@@ -2,7 +2,7 @@
   "pipeline": "GondHawk — Integrante 6 (Laura)",
   "video_fuente": "data/vtest.avi",
   "frames_procesados": 795,
-  "tiempo_procesamiento_seg": 35.47,
+  "tiempo_procesamiento_seg": 40.96,
   "total_detecciones": 4576,
   "eventos_generados": 104,
   "eventos_compliance": 104,

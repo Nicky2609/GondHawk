@@ -34,15 +34,15 @@ from typing import Any, Iterator
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from metrics import DwellIndex, calcular_metricas  # noqa: E402
-from reach_detector import ReachConfig  # noqa: E402
-from state_machine import (  # noqa: E402
+from backend.deteccion_eventos.src.metrics import DwellIndex, calcular_metricas  # noqa: E402
+from backend.deteccion_eventos.src.reach_detector import ReachConfig  # noqa: E402
+from backend.deteccion_eventos.src.state_machine import (  # noqa: E402
     EVENTOS_COMPLIANCE,
     Evento,
     InteractionConfig,
     InteractionStateMachine,
 )
-from zonas import cargar_layout  # noqa: E402
+from backend.deteccion_eventos.src.zonas import cargar_layout  # noqa: E402
 
 
 def leer_tracking(ruta: Path) -> Iterator[dict[str, Any]]:
