@@ -7,26 +7,50 @@ import { ZoneShelfPanel } from './components/zones/ZoneShelfPanel';
 import { HeatmapPanel } from './components/heatmap/HeatmapPanel';
 import { ZoneFunnelTable } from './components/funnel/ZoneFunnelTable';
 import { AlertsPanel } from './components/alerts/AlertsPanel';
+import { BarChart3, Boxes, ChartNoAxesCombined, Gauge, House, Map, ShieldCheck } from 'lucide-react';
 
 const SAFE_ENDPOINTS = {
-  analyze: '/api/videos/analyze',
-  latest: '/api/videos/latest',
-  heatmap: '/api/videos/heatmap',
+  analyze: 'http://localhost:8000/api/videos/analyze',
+  heatmap: 'http://localhost:8000/api/videos/heatmap',
 };
 
 export default function App() {
-  const { data, status, error } = useDashboardData();
+  const { data, status, error, updateFromAnalysis, resetData } = useDashboardData();
   const [selectedFile, setSelectedFile] = useState(null);
   const [processing, setProcessing] = useState(false);
   const [progress, setProgress] = useState(0);
   const [analysisMessage, setAnalysisMessage] = useState('Listo para analizar un video.');
   const [lastResult, setLastResult] = useState(null);
+  const [analysisCompleted, setAnalysisCompleted] = useState(false);
+  const fileInputRef = useRef(null);
   const timerRef = useRef(null);
+  const [activeSection, setActiveSection] = useState('cargar');
 
   useEffect(() => {
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
+  }, []);
+
+  useEffect(() => {
+    const sectionIds = ['cargar', 'mapa-calor', 'estado-gondola', 'embudo-gondola', 'recomendaciones'];
+    const sections = sectionIds
+      .map((id) => document.getElementById(id))
+      .filter(Boolean);
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visibleSections = entries
+          .filter((entry) => entry.isIntersecting)
+          .sort((first, second) => first.boundingClientRect.top - second.boundingClientRect.top);
+
+        if (visibleSections[0]) setActiveSection(visibleSections[0].target.id);
+      },
+      { rootMargin: '-18% 0px -68% 0px', threshold: 0 },
+    );
+
+    sections.forEach((section) => observer.observe(section));
+    return () => observer.disconnect();
   }, []);
 
   const currentData = useMemo(() => {
@@ -52,6 +76,9 @@ export default function App() {
 
     setProcessing(true);
     setProgress(0);
+    resetData();
+    setLastResult(null);
+    setAnalysisCompleted(false);
     setAnalysisMessage(`Analizando ${selectedFile.name}...`);
 
     if (timerRef.current) clearInterval(timerRef.current);
@@ -64,25 +91,42 @@ export default function App() {
 
     try {
       const formData = new FormData();
-      formData.append('video', selectedFile);
+      formData.append('file', selectedFile);
 
       const response = await fetch(SAFE_ENDPOINTS.analyze, {
         method: 'POST',
         body: formData,
       });
 
-      if (!response.ok) {
-        throw new Error('Endpoint no disponible aún');
+      let payload = {};
+      try {
+        payload = await response.json();
+      } catch {
+        payload = {};
       }
 
-      const payload = await response.json();
+      if (!response.ok) {
+        const detail = typeof payload?.detail === 'string'
+          ? payload.detail
+          : typeof payload?.message === 'string'
+            ? payload.message
+            : 'El backend rechazó la solicitud.';
+        throw new Error(detail);
+      }
+
       setLastResult(payload);
-      setAnalysisMessage('Análisis completado correctamente.');
-    } catch {
-      setLastResult((prev) => prev ?? {
-        mensaje: 'Modo de prueba: el endpoint backend aún no está conectado, pero la UI de análisis queda preparada para el flujo real.',
-      });
-      setAnalysisMessage('Uso de prueba: endpoint aún no implementado en backend.');
+      updateFromAnalysis(payload, Date.now());
+      setAnalysisCompleted(true);
+      const realMessage = typeof payload?.message === 'string'
+        ? payload.message
+        : typeof payload?.status === 'string'
+          ? payload.status
+          : `Análisis completado para ${selectedFile.name}.`;
+      setAnalysisMessage(realMessage);
+    } catch (err) {
+      const realError = err instanceof Error ? err.message : 'No se pudo completar la solicitud.';
+      setLastResult((prev) => prev ?? { mensaje: realError });
+      setAnalysisMessage(realError);
     } finally {
       if (timerRef.current) clearInterval(timerRef.current);
       setProgress(100);
@@ -90,50 +134,70 @@ export default function App() {
     }
   };
 
+  const handleClearInformation = () => {
+    if (timerRef.current) clearInterval(timerRef.current);
+    resetData();
+    setSelectedFile(null);
+    setProcessing(false);
+    setProgress(0);
+    setAnalysisMessage('Listo para analizar un video.');
+    setLastResult(null);
+    setAnalysisCompleted(false);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
   return (
-    <div className="mx-auto max-w-6xl space-y-5 p-6">
-      <Header />
+    <div className="app-shell">
+      <aside className="sidebar">
+        <div className="brand"><span className="brand-mark"><Gauge size={16} /></span><p className="brand-name">GondHawk<span>Funcionalidades</span></p></div>
+        <nav className="nav-list" aria-label="Navegación principal">
+          <a className={`nav-item ${activeSection === 'cargar' ? 'active' : ''}`} href="#cargar"><House size={14} />Cargar video</a>
+          <a className={`nav-item ${activeSection === 'mapa-calor' ? 'active' : ''}`} href="#mapa-calor"><Map size={14} />Mapa de calor</a>
+          <a className={`nav-item ${activeSection === 'estado-gondola' ? 'active' : ''}`} href="#estado-gondola"><ChartNoAxesCombined size={14} />Estado por góndola</a>
+          <a className={`nav-item ${activeSection === 'embudo-gondola' ? 'active' : ''}`} href="#embudo-gondola"><Boxes size={14} />Embudo por góndola</a>
+          <a className={`nav-item ${activeSection === 'recomendaciones' ? 'active' : ''}`} href="#recomendaciones"><BarChart3 size={14} />Recomendaciones</a>
+        </nav>
+        <div className="sidebar-foot"><strong><ShieldCheck size={13} /> Privacidad por diseño</strong>Procesamiento local y métricas anónimas.</div>
+      </aside>
 
-      <section className="rounded-2xl border border-[var(--panel-border)] bg-[var(--panel)] p-5">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-          <div>
-            <p className="text-xs uppercase tracking-[0.22em] text-[var(--ink-muted)]">Análisis de video</p>
-            <h2 className="mt-2 text-2xl font-semibold">Carga y procesamiento del flujo</h2>
-          </div>
-
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-            <label className="inline-flex cursor-pointer items-center justify-center rounded-xl border border-[var(--panel-border)] bg-[#12231d] px-4 py-2 text-sm font-medium text-[var(--ink)] transition hover:border-[var(--accent)]">
-              <input
-                type="file"
-                accept="video/*"
-                className="hidden"
-                onChange={(event) => setSelectedFile(event.target.files?.[0] ?? null)}
-              />
-              {selectedFile ? 'Cambiar video' : 'Seleccionar video'}
-            </label>
-
-            <button
-              type="button"
-              onClick={handleAnalyze}
-              disabled={processing}
-              className="rounded-xl bg-[var(--accent)] px-4 py-2 text-sm font-semibold text-[#07150f] transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {processing ? 'Analizando...' : 'Analizar video'}
-            </button>
-          </div>
+      <main className="main-content">
+        <div className="dashboard-header">
+          <Header />
         </div>
 
-        <div className="mt-5 flex flex-col gap-4 rounded-xl border border-[var(--panel-border)] bg-[#0d1a16] p-4 md:flex-row md:items-center md:justify-between">
-          <div className="min-w-0">
-            <p className="text-xs uppercase tracking-[0.18em] text-[var(--ink-muted)]">Archivo</p>
-            <p className="mt-1 truncate text-sm text-[var(--ink)]">
-              {selectedFile ? selectedFile.name : 'Sin archivo seleccionado'}
-            </p>
-          </div>
+        <div className="content-stack">
+          <section id="cargar" className="analysis-card">
+            <div className="analysis-card-head">
+              <div><p className="eyebrow">Análisis de video</p><h2>Carga y procesamiento del flujo</h2><p className="muted">Selecciona un archivo para generar las métricas de esta sesión.</p></div>
+              <div className="upload-actions">
+                {analysisCompleted ? (
+                  <button type="button" onClick={handleClearInformation} className="analyze-button">Limpiar información</button>
+                ) : (
+                  <>
+                    <label className="upload-button">
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="video/*"
+                        className="hidden"
+                        onChange={(event) => setSelectedFile(event.target.files?.[0] ?? null)}
+                      />
+                      {selectedFile ? 'Cambiar video' : 'Seleccionar video'}
+                    </label>
+                    <button type="button" onClick={handleAnalyze} disabled={processing} className="analyze-button">
+                      {processing ? 'Analizando...' : 'Analizar video'}
+                    </button>
+                  </>
+                )}
+              </div>
+            </div>
 
-          <div className="flex items-center gap-4">
-            <div className="relative h-12 w-12">
-              <svg viewBox="0 0 100 100" className="h-12 w-12 -rotate-90">
+            <div className="file-status">
+              <div className="min-w-0"><p className="eyebrow">Archivo seleccionado</p><p className="mt-1 truncate text-sm text-[var(--ink)]">
+                {selectedFile ? selectedFile.name : 'Sin archivo seleccionado'}
+              </p></div>
+
+              <div className="progress-wrap"><div className="progress-ring"><svg viewBox="0 0 100 100">
                 <circle cx="50" cy="50" r="42" stroke="rgba(255,255,255,0.15)" strokeWidth="10" fill="none" />
                 <circle
                   cx="50"
@@ -147,35 +211,35 @@ export default function App() {
                   strokeDashoffset={264 - (264 * progress) / 100}
                   style={{ transition: 'stroke-dashoffset 0.25s ease' }}
                 />
-              </svg>
-              <span className="absolute inset-0 flex items-center justify-center text-[10px] font-semibold text-[var(--ink)]">
-                {progress}%
-              </span>
+              </svg><span>{progress}%</span></div><div><p>{processing ? 'Procesando video' : 'Listo para analizar'}</p><p>{analysisMessage}</p></div></div>
             </div>
 
-            <div className="text-sm text-[var(--ink-muted)]">
-              <p>{processing ? 'Procesando video' : 'Pendiente'}</p>
-              <p className="text-xs">{analysisMessage}</p>
-            </div>
+            {lastResult && (
+              <div className="result-message">
+                {lastResult.message ?? lastResult.detail ?? lastResult.mensaje ?? 'El backend no devolvió un mensaje.'}
+              </div>
+            )}
+          </section>
+
+          <KpiStrip resumen={resumen} />
+
+          <div id="mapa-calor" className="dashboard-zone">
+            <HeatmapPanel heatmapUrl={currentData.heatmapUrl} />
+          </div>
+
+          <div id="estado-gondola" className="dashboard-zone">
+            <ZoneShelfPanel zonasGondola={currentData.zonasGondola} />
+          </div>
+
+          <div id="embudo-gondola" className="dashboard-zone">
+            <ZoneFunnelTable zonasGondola={currentData.zonasGondola} />
+          </div>
+
+          <div id="recomendaciones" className="dashboard-zone">
+            <AlertsPanel alertas={currentData.alertas} />
           </div>
         </div>
-
-        {lastResult && (
-          <div className="mt-4 rounded-xl border border-[var(--panel-border)] bg-[#0f2018] p-3 text-sm text-[var(--ink-muted)]">
-            {lastResult.mensaje ?? 'Última ejecución preparada para el backend real.'}
-          </div>
-        )}
-      </section>
-
-      <KpiStrip resumen={resumen} />
-
-      <div className="grid gap-4 lg:grid-cols-2">
-        <ZoneShelfPanel zonasGondola={currentData.zonasGondola} />
-        <HeatmapPanel heatmapUrl={currentData.heatmapUrl} />
-      </div>
-
-      <ZoneFunnelTable zonasGondola={currentData.zonasGondola} />
-      <AlertsPanel alertas={currentData.alertas} />
+      </main>
     </div>
   );
 }

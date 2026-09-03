@@ -1,66 +1,46 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { DATA_SOURCES } from '../config/dataConfig';
 
-const fallbackPipeline = {
-  estado: 'mock',
-  total: 0,
-  resumen: 'Datos de prueba en modo mock',
+const EMPTY_DATA = {
+  zonasGondola: [],
+  totalGlobal: { visitas: 0, tasa_interaccion: 0, tasa_rechazo: 0 },
+  alertas: [],
+  resumenPipeline: {},
+  conteoZonas: [],
+  heatmapUrl: null,
 };
 
-async function safeJsonFetch(url, fallback) {
-  try {
-    const response = await fetch(url);
-    if (!response.ok) return fallback;
-    const text = await response.text();
-    if (!text || text.trim() === '') return fallback;
+export function normalizeAnalysisResponse(payload, cacheKey = '') {
+  const interaction = payload?.interaction ?? payload ?? {};
+  const pipeline = payload?.pipeline ?? {};
+  const conteo = payload?.conteo_zonas ?? { zonas: [] };
 
-    try {
-      return JSON.parse(text);
-    } catch {
-      return fallback;
-    }
-  } catch {
-    return fallback;
-  }
+  return {
+    zonasGondola: Array.isArray(interaction.zonas) ? interaction.zonas : [],
+    totalGlobal: interaction.total ?? { visitas: 0, tasa_interaccion: 0, tasa_rechazo: 0 },
+    alertas: Array.isArray(interaction.alertas) ? interaction.alertas : [],
+    resumenPipeline: pipeline,
+    conteoZonas: Array.isArray(conteo.zonas) ? conteo.zonas : [],
+    heatmapUrl: payload?.heatmap_url
+      ? `${DATA_SOURCES.apiBase}${payload.heatmap_url}${cacheKey ? `?analysis=${cacheKey}` : ''}`
+      : null,
+  };
 }
 
 export function useDashboardData() {
-  const [data, setData] = useState(null);
-  const [status, setStatus] = useState('loading');
+  const [data, setData] = useState(EMPTY_DATA);
+  const [status] = useState('ready');
   const [error, setError] = useState(null);
 
-  useEffect(() => {
-    let cancelado = false;
+  function updateFromAnalysis(payload, cacheKey) {
+    setData(normalizeAnalysisResponse(payload, cacheKey));
+    setError(null);
+  }
 
-    async function cargar() {
-      try {
-        const [metricasInteraccion, metricasPipeline, conteoZonas] = await Promise.all([
-          safeJsonFetch(DATA_SOURCES.metricasInteraccion, { total: { visitas: 0, tasa_interaccion: 0, tasa_rechazo: 0 }, zonas: [], alertas: [] }),
-          safeJsonFetch(DATA_SOURCES.metricasPipeline, fallbackPipeline),
-          safeJsonFetch(DATA_SOURCES.conteoZonas, { zonas: [] }),
-        ]);
+  function resetData() {
+    setData(EMPTY_DATA);
+    setError(null);
+  }
 
-        if (cancelado) return;
-
-        setData({
-          zonasGondola: Array.isArray(metricasInteraccion.zonas) ? metricasInteraccion.zonas : [],
-          totalGlobal: metricasInteraccion.total ?? { visitas: 0, tasa_interaccion: 0, tasa_rechazo: 0 },
-          alertas: Array.isArray(metricasInteraccion.alertas) ? metricasInteraccion.alertas : [],
-          resumenPipeline: metricasPipeline,
-          conteoZonas: Array.isArray(conteoZonas.zonas) ? conteoZonas.zonas : [],
-          heatmapUrl: DATA_SOURCES.heatmapImage,
-        });
-        setStatus('ready');
-      } catch (err) {
-        if (cancelado) return;
-        setError(err);
-        setStatus('error');
-      }
-    }
-
-    cargar();
-    return () => { cancelado = true; };
-  }, []);
-
-  return { data, status, error };
+  return { data, status, error, updateFromAnalysis, resetData };
 }
