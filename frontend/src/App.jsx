@@ -7,15 +7,11 @@ import { ZoneShelfPanel } from './components/zones/ZoneShelfPanel';
 import { HeatmapPanel } from './components/heatmap/HeatmapPanel';
 import { ZoneFunnelTable } from './components/funnel/ZoneFunnelTable';
 import { AlertsPanel } from './components/alerts/AlertsPanel';
+import { DATA_SOURCES } from './config/dataConfig';
 import { BarChart3, Boxes, ChartNoAxesCombined, Gauge, House, Map, ShieldCheck } from 'lucide-react';
 
-const SAFE_ENDPOINTS = {
-  analyze: 'http://localhost:8000/api/videos/analyze',
-  heatmap: 'http://localhost:8000/api/videos/heatmap',
-};
-
 export default function App() {
-  const { data, status, error, updateFromAnalysis, resetData } = useDashboardData();
+  const { data, updateFromAnalysis, resetData } = useDashboardData();
   const [selectedFile, setSelectedFile] = useState(null);
   const [processing, setProcessing] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -63,9 +59,6 @@ export default function App() {
     };
   }, [data]);
 
-  if (status === 'loading') return <Estado texto="Cargando métricas…" />;
-  if (status === 'error') return <Estado texto={`No se pudo cargar: ${error.message}`} />;
-
   const resumen = resumenGlobal(currentData.totalGlobal, currentData.zonasGondola);
 
   const handleAnalyze = async () => {
@@ -93,7 +86,7 @@ export default function App() {
       const formData = new FormData();
       formData.append('file', selectedFile);
 
-      const response = await fetch(SAFE_ENDPOINTS.analyze, {
+      const response = await fetch(DATA_SOURCES.analyzeVideo, {
         method: 'POST',
         body: formData,
       });
@@ -242,8 +235,4 @@ export default function App() {
       </main>
     </div>
   );
-}
-
-function Estado({ texto }) {
-  return <p className="p-6 text-sm text-[var(--ink-muted)]">{texto}</p>;
 }

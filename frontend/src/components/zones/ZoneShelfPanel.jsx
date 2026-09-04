@@ -18,7 +18,7 @@ export function ZoneShelfPanel({ zonasGondola }) {
                 <span className="temperature-badge" style={{ color, borderColor: color }}>
                   {temperaturaLabel(zona.temperatura)}
                 </span>
-                <span className="flex items-center gap-1"><Clock size={12} /> {zona.dwell_promedio_s.toFixed(1)}s</span>
+                <span className="flex items-center gap-1"><Clock size={12} /> {(zona.dwell_promedio_s ?? 0).toFixed(1)}s</span>
               </div>
             </div>
           );

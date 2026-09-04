@@ -29,18 +29,14 @@ export function normalizeAnalysisResponse(payload, cacheKey = '') {
 
 export function useDashboardData() {
   const [data, setData] = useState(EMPTY_DATA);
-  const [status] = useState('ready');
-  const [error, setError] = useState(null);
 
   function updateFromAnalysis(payload, cacheKey) {
     setData(normalizeAnalysisResponse(payload, cacheKey));
-    setError(null);
   }
 
   function resetData() {
     setData(EMPTY_DATA);
-    setError(null);
   }
 
-  return { data, status, error, updateFromAnalysis, resetData };
+  return { data, updateFromAnalysis, resetData };
 }

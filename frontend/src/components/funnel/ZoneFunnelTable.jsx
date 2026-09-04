@@ -14,14 +14,17 @@ export function ZoneFunnelTable({ zonasGondola }) {
           </tr>
         </thead>
         <tbody>
-          {zonasGondola.map((zona) => (
-            <tr key={zona.zone_id} className="border-b border-[var(--panel-border)] last:border-0">
-              <td className="py-2">{zoneLabel(zona.zone_id)}</td>
-              <td className="py-2">{zona.embudo.se_detiene}</td>
-              <td className="py-2">{zona.embudo.toma_producto}</td>
-              <td className="py-2">{zona.embudo.devuelve}</td>
-            </tr>
-          ))}
+          {zonasGondola.map((zona) => {
+            const embudo = zona.embudo ?? {};
+            return (
+              <tr key={zona.zone_id} className="border-b border-[var(--panel-border)] last:border-0">
+                <td className="py-2">{zoneLabel(zona.zone_id)}</td>
+                <td className="py-2">{embudo.se_detiene ?? 0}</td>
+                <td className="py-2">{embudo.toma_producto ?? 0}</td>
+                <td className="py-2">{embudo.devuelve ?? 0}</td>
+              </tr>
+            );
+          })}
         </tbody>
       </table>
     </div>
