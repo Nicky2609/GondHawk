@@ -1,18 +1,37 @@
+import { Users, Clock, Hand, RotateCcw } from 'lucide-react';
+
+const ICONOS = { personas: Users, permanencia: Clock, interaccion: Hand, rechazo: RotateCcw };
+
+/**
+ * Tira de KPIs principales.
+ *
+ * A diferencia del mockup, no se muestran variaciones "vs. período anterior":
+ * el sistema analiza un video a la vez y no tiene serie histórica comparable,
+ * así que ese porcentaje sería inventado. Cuando el historial acumule análisis
+ * del mismo local, se puede calcular de verdad.
+ */
 export function KpiStrip({ resumen }) {
   const items = [
-    { label: 'Personas detectadas', valor: resumen.totalPersonasAprox },
-    { label: 'Permanencia media', valor: `${resumen.dwellPromedioGlobal.toFixed(0)}s` },
-    { label: 'Tasa de interacción', valor: `${Math.round(resumen.tasaInteraccionGlobal * 100)}%` },
-    { label: 'Tasa de rechazo', valor: `${Math.round(resumen.tasaRechazoGlobal * 100)}%` },
+    { id: 'personas', label: 'Personas detectadas', valor: resumen.totalPersonasAprox },
+    { id: 'permanencia', label: 'Permanencia media', valor: `${resumen.dwellPromedioGlobal.toFixed(0)} s` },
+    { id: 'interaccion', label: 'Tasa de interacción', valor: `${Math.round((resumen.tasaInteraccionGlobal ?? 0) * 100)} %` },
+    { id: 'rechazo', label: 'Tasa de rechazo', valor: `${Math.round((resumen.tasaRechazoGlobal ?? 0) * 100)} %` },
   ];
+
   return (
-    <div className="grid grid-cols-2 rounded-2xl border border-[var(--panel-border)] bg-[var(--panel)] sm:grid-cols-4">
-      {items.map((item, i) => (
-        <div key={item.label} className={`px-5 py-4 text-center ${i > 0 ? 'border-l border-[var(--panel-border)]' : ''}`}>
-          <p className="text-xs text-[var(--ink-muted)]">{item.label}</p>
-          <p className="mt-1 text-3xl">{item.valor}</p>
-        </div>
-      ))}
+    <div className="kpi-grid">
+      {items.map((item) => {
+        const Icono = ICONOS[item.id];
+        return (
+          <div key={item.id} className="kpi-card">
+            <div className="kpi-icon"><Icono size={20} /></div>
+            <div>
+              <p className="kpi-label">{item.label}</p>
+              <p className="kpi-value">{item.valor}</p>
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 }

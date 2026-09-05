@@ -7,8 +7,14 @@ import { ZoneShelfPanel } from './components/zones/ZoneShelfPanel';
 import { HeatmapPanel } from './components/heatmap/HeatmapPanel';
 import { ZoneFunnelTable } from './components/funnel/ZoneFunnelTable';
 import { AlertsPanel } from './components/alerts/AlertsPanel';
-import { DATA_SOURCES } from './config/dataConfig';
-import { BarChart3, Boxes, ChartNoAxesCombined, Gauge, House, Map, ShieldCheck } from 'lucide-react';
+import { VideoPanel } from './components/video/VideoPanel';
+import { FunnelPanel } from './components/dashboard/FunnelPanel';
+import { PerformanceTable } from './components/dashboard/PerformanceTable';
+import { PrivacyBar } from './components/dashboard/PrivacyBar';
+import { HistoryPanel } from './components/history/HistoryPanel';
+import { ReportDownloads } from './components/reports/ReportDownloads';
+import { ANALYSIS_DEFAULTS, DATA_SOURCES, buildAnalyzeUrl } from './config/dataConfig';
+import { BarChart3, Boxes, ChartNoAxesCombined, Clock, Gauge, House, Map, PlayCircle, ShieldCheck } from 'lucide-react';
 
 export default function App() {
   const { data, updateFromAnalysis, resetData } = useDashboardData();
@@ -21,6 +27,12 @@ export default function App() {
   const fileInputRef = useRef(null);
   const timerRef = useRef(null);
   const [activeSection, setActiveSection] = useState('cargar');
+  const [zonasAuto, setZonasAuto] = useState(ANALYSIS_DEFAULTS.zonasAuto);
+  const [frameSkip, setFrameSkip] = useState(ANALYSIS_DEFAULTS.frameSkip);
+  const [recomendaciones, setRecomendaciones] = useState(null);
+  const [fuenteReco, setFuenteReco] = useState(null);
+  const [historialKey, setHistorialKey] = useState(0);
+  const [zonaSeleccionada, setZonaSeleccionada] = useState(null);
 
   useEffect(() => {
     return () => {
@@ -29,7 +41,7 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    const sectionIds = ['cargar', 'mapa-calor', 'estado-gondola', 'embudo-gondola', 'recomendaciones'];
+    const sectionIds = ['cargar', 'video', 'mapa-calor', 'estado-gondola', 'embudo-gondola', 'recomendaciones', 'historial'];
     const sections = sectionIds
       .map((id) => document.getElementById(id))
       .filter(Boolean);
@@ -86,7 +98,7 @@ export default function App() {
       const formData = new FormData();
       formData.append('file', selectedFile);
 
-      const response = await fetch(DATA_SOURCES.analyzeVideo, {
+      const response = await fetch(buildAnalyzeUrl({ zonasAuto, frameSkip }), {
         method: 'POST',
         body: formData,
       });
@@ -110,6 +122,20 @@ export default function App() {
       setLastResult(payload);
       updateFromAnalysis(payload, Date.now());
       setAnalysisCompleted(true);
+      setHistorialKey((k) => k + 1);
+
+      // Las recomendaciones se piden aparte: si el motor falla, el resto del
+      // análisis ya está en pantalla y no se pierde.
+      if (payload?.analisis_id) {
+        fetch(DATA_SOURCES.recomendaciones(payload.analisis_id))
+          .then((r) => (r.ok ? r.json() : null))
+          .then((reco) => {
+            if (!reco) return;
+            setRecomendaciones(reco.recomendaciones ?? []);
+            setFuenteReco(reco.fuente ?? null);
+          })
+          .catch(() => {});
+      }
       const realMessage = typeof payload?.message === 'string'
         ? payload.message
         : typeof payload?.status === 'string'
@@ -136,6 +162,8 @@ export default function App() {
     setAnalysisMessage('Listo para analizar un video.');
     setLastResult(null);
     setAnalysisCompleted(false);
+    setRecomendaciones(null);
+    setFuenteReco(null);
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
@@ -145,17 +173,22 @@ export default function App() {
         <div className="brand"><span className="brand-mark"><Gauge size={16} /></span><p className="brand-name">GondHawk<span>Funcionalidades</span></p></div>
         <nav className="nav-list" aria-label="Navegación principal">
           <a className={`nav-item ${activeSection === 'cargar' ? 'active' : ''}`} href="#cargar"><House size={14} />Cargar video</a>
+          <a className={`nav-item ${activeSection === 'video' ? 'active' : ''}`} href="#video"><PlayCircle size={14} />Video analizado</a>
           <a className={`nav-item ${activeSection === 'mapa-calor' ? 'active' : ''}`} href="#mapa-calor"><Map size={14} />Mapa de calor</a>
           <a className={`nav-item ${activeSection === 'estado-gondola' ? 'active' : ''}`} href="#estado-gondola"><ChartNoAxesCombined size={14} />Estado por góndola</a>
           <a className={`nav-item ${activeSection === 'embudo-gondola' ? 'active' : ''}`} href="#embudo-gondola"><Boxes size={14} />Embudo por góndola</a>
           <a className={`nav-item ${activeSection === 'recomendaciones' ? 'active' : ''}`} href="#recomendaciones"><BarChart3 size={14} />Recomendaciones</a>
+          <a className={`nav-item ${activeSection === 'historial' ? 'active' : ''}`} href="#historial"><Clock size={14} />Historial</a>
         </nav>
         <div className="sidebar-foot"><strong><ShieldCheck size={13} /> Privacidad por diseño</strong>Procesamiento local y métricas anónimas.</div>
       </aside>
 
       <main className="main-content">
         <div className="dashboard-header">
-          <Header />
+          <Header
+            frames={currentData.resumenPipeline?.frames_procesados}
+            tiempo={currentData.resumenPipeline?.tiempo_procesamiento_seg}
+          />
         </div>
 
         <div className="content-stack">
@@ -183,6 +216,31 @@ export default function App() {
                   </>
                 )}
               </div>
+            </div>
+
+            <div className="analysis-options">
+              <label className="analysis-option">
+                <input
+                  type="checkbox"
+                  checked={zonasAuto}
+                  onChange={(event) => setZonasAuto(event.target.checked)}
+                />
+                <span>
+                  Detectar zonas automáticamente
+                  <small>Recomendado. Sin esto se usan las zonas del video de calibración.</small>
+                </span>
+              </label>
+              <label className="analysis-option">
+                <span>
+                  Frames analizados
+                  <small>Saltar frames acelera el análisis pero fragmenta el seguimiento.</small>
+                </span>
+                <select value={frameSkip} onChange={(event) => setFrameSkip(Number(event.target.value))}>
+                  <option value={1}>Todos (mejor precisión)</option>
+                  <option value={2}>1 de cada 2</option>
+                  <option value={3}>1 de cada 3 (más rápido)</option>
+                </select>
+              </label>
             </div>
 
             <div className="file-status">
@@ -216,21 +274,90 @@ export default function App() {
 
           <KpiStrip resumen={resumen} />
 
-          <div id="mapa-calor" className="dashboard-zone">
-            <HeatmapPanel heatmapUrl={currentData.heatmapUrl} />
+          {/* Fila principal: video, heatmap y embudo, como en el tablero de
+              referencia. En pantallas menores a 1200px se apilan solos. */}
+          <div id="video" className="dashboard-grid dashboard-grid-3">
+            <section className="panel">
+              <div className="panel-head">
+                <h3>Video analizado</h3>
+                <span className="badge badge-ok">Anonimizado</span>
+              </div>
+              <VideoPanel
+                videoUrl={currentData.videoAnotadoUrl}
+                zonasUrl={currentData.zonasPropuestasUrl}
+                embebido
+              />
+            </section>
+
+            <section id="mapa-calor" className="panel">
+              <div className="panel-head"><h3>Mapa de calor de flujo</h3></div>
+              <HeatmapPanel heatmapUrl={currentData.heatmapUrl} />
+            </section>
+
+            <FunnelPanel
+              total={currentData.totalGlobal}
+              zonas={currentData.zonasGondola}
+              zonaSeleccionada={zonaSeleccionada}
+              onSeleccionar={setZonaSeleccionada}
+            />
           </div>
 
-          <div id="estado-gondola" className="dashboard-zone">
-            <ZoneShelfPanel zonasGondola={currentData.zonasGondola} />
+          {/* Segunda fila: rendimiento por góndola y recomendaciones */}
+          <div id="estado-gondola" className="dashboard-grid dashboard-grid-2">
+            <PerformanceTable
+              zonas={currentData.zonasGondola}
+              zonaSeleccionada={zonaSeleccionada}
+              onSeleccionar={setZonaSeleccionada}
+            />
+
+            <section id="recomendaciones" className="panel">
+              <div className="panel-head"><h3>Recomendaciones</h3></div>
+              <div className="panel-body">
+                <AlertsPanel
+                  alertas={currentData.alertas}
+                  recomendaciones={recomendaciones}
+                  fuente={fuenteReco}
+                />
+              </div>
+            </section>
           </div>
 
-          <div id="embudo-gondola" className="dashboard-zone">
-            <ZoneFunnelTable zonasGondola={currentData.zonasGondola} />
+          <div id="embudo-gondola" className="dashboard-grid dashboard-grid-2">
+            <section className="panel">
+              <div className="panel-head"><h3>Detalle por góndola</h3></div>
+              <div className="panel-body">
+                <ZoneShelfPanel zonasGondola={currentData.zonasGondola} />
+              </div>
+            </section>
+
+            <section className="panel">
+              <div className="panel-head">
+                <h3>Embudo detallado</h3>
+              </div>
+              <div className="panel-body">
+                <ZoneFunnelTable zonasGondola={currentData.zonasGondola} />
+                {currentData.analisisId && (
+                  <div className="mt-4">
+                    <ReportDownloads analisisId={currentData.analisisId} />
+                  </div>
+                )}
+              </div>
+            </section>
           </div>
 
-          <div id="recomendaciones" className="dashboard-zone">
-            <AlertsPanel alertas={currentData.alertas} />
+          <div id="historial" className="dashboard-grid dashboard-grid-2">
+            <HistoryPanel
+              recargar={historialKey}
+              onAbrir={(detalle, id) => {
+                updateFromAnalysis({ ...detalle, analisis_id: id }, Date.now());
+                setAnalysisCompleted(true);
+                setAnalysisMessage(`Mostrando análisis de ${detalle?.video ?? id}.`);
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+            />
+            <PrivacyBar />
           </div>
+
         </div>
       </main>
     </div>

@@ -137,7 +137,25 @@ del sys.modules["trajectory_reader"]
 from metrics import DwellIndex, calcular_metricas
 from reach_detector import ReachConfig
 from state_machine import InteractionConfig, InteractionStateMachine
-from zonas import cargar_layout
+from zonas import Layout, Zona, cargar_layout
+
+# Preproceso propio del pipeline: escalado de zonas a la resolución real,
+# anonimización de rostros y verificación de que la escena sea retail.
+from video_anotado import VideoAnotado
+from zonas_auto import (
+    dibujar_propuesta,
+    guardar_propuesta,
+    proponer_zonas,
+    transito_desde_detecciones,
+)
+from recomendador import generar_recomendaciones
+from preproceso import (
+    AnonimizadorRostros,
+    ConfigAnonimizacion,
+    escalar_zonas,
+    evaluar_escena_retail,
+    muestrear_frames,
+)
 
 # La proyección al esquema del módulo 8 y la carga del mapa de productos se
 # IMPORTAN del módulo 1; antes estaban copiadas aquí. Con la copia, cualquier
@@ -157,6 +175,14 @@ import numpy as np
 DEFAULT_ZONAS = ROOT / "mapas_de_calor" / "config" / "zonas.json"
 DEFAULT_OUTDIR = ROOT / "pipeline" / "output"
 DEFAULT_T0 = "2026-08-20T09:00:00"
+
+
+class VideoNoRetailError(RuntimeError):
+    """El video subido no parece corresponder a una superficie comercial."""
+
+    def __init__(self, mensaje: str, escena: dict[str, Any]):
+        super().__init__(mensaje)
+        self.escena = escena
 
 
 # ── Helpers ─────────────────────────────────────────────────────────────────
@@ -200,6 +226,14 @@ class GondolaPipeline:
         model_path: str = "yolov8n.pt",
         conf_threshold: float = 0.4,
         colormap: str = "turbo",
+        anonimizar: bool = True,
+        modo_anonimizacion: str = "blur",
+        verificar_escena: bool = True,
+        umbral_escena: float = 0.45,
+        frame_skip: int = 1,
+        video_anotado: bool = True,
+        zonas_auto: bool = False,
+        usar_ia: bool = True,
     ):
         self.video_source = video_source
         self.zonas_path = zonas_path
@@ -209,6 +243,25 @@ class GondolaPipeline:
         self.min_dwell_s = min_dwell_s
         self.max_frames = max_frames
         self.colormap = colormap
+        self.frame_skip = max(1, int(frame_skip))
+
+        # La ventana de gracia se mide en FRAMES PROCESADOS, así que con
+        # --frame-skip 3 una gracia de 5 equivale a 15 frames de video. Al
+        # revés, mantenerla fija hace que los episodios se fragmenten al subir
+        # el skip: fue lo que hizo caer las paradas de 64 a 31 en la primera
+        # prueba con skip 3. Se conserva la tolerancia en TIEMPO REAL.
+        gracia_efectiva = max(1, round(gracia_frames / self.frame_skip))
+        self.generar_video_anotado = video_anotado
+        self.zonas_auto = zonas_auto
+        self.usar_ia = usar_ia
+        self._writer_video: VideoAnotado | None = None
+        self.verificar_escena = verificar_escena
+        self.umbral_escena = umbral_escena
+        self.anonimizador = AnonimizadorRostros(
+            ConfigAnonimizacion(activo=anonimizar, modo=modo_anonimizacion)
+        )
+        self.info_zonas: dict[str, Any] = {}
+        self.escena: dict[str, Any] = {}
 
         self.outdir.mkdir(parents=True, exist_ok=True)
 
@@ -231,7 +284,7 @@ class GondolaPipeline:
         self.dwell_analyzer = DwellTimeAnalyzer(
             zones=zones_dwell,
             min_dwell_ms=min_dwell_s * 1000.0,
-            grace_frames=gracia_frames,
+            grace_frames=gracia_efectiva,
         )
 
         # ── Módulo 1: Máquina de estados ────────────────────────────────────
@@ -241,7 +294,7 @@ class GondolaPipeline:
             layout=layout,
             config=InteractionConfig(
                 min_dwell_s=min_dwell_s,
-                gracia_frames=gracia_frames,
+                gracia_frames=gracia_efectiva,
             ),
             reach_config=ReachConfig(),
             modo_alcance=modo_alcance,
@@ -276,9 +329,38 @@ class GondolaPipeline:
             if str(self.video_source).isdigit()
             else self.video_source
         )
+        # Verificación de escena ANTES de gastar minutos de inferencia en un
+        # video que no es de una superficie comercial.
+        if self.verificar_escena and not str(self.video_source).isdigit():
+            print("[pipeline] Verificando que el video sea de una superficie comercial...")
+            resultado = evaluar_escena_retail(
+                muestrear_frames(str(self.video_source)), umbral=self.umbral_escena
+            )
+            self.escena = resultado.to_dict()
+            if resultado.senales:
+                print(f"[pipeline] Puntaje de escena retail: {resultado.puntaje:.2f}")
+            else:
+                # Sin señales no hubo verificación real; decirlo en vez de
+                # imprimir un 0.00 que parece un rechazo.
+                print(f"[aviso] {resultado.motivo}")
+            if not resultado.es_retail:
+                raise VideoNoRetailError(resultado.motivo, self.escena)
+
+        # Distinguir "no existe" de "no se pudo abrir": el segundo mensaje
+        # manda a buscar un problema de codec cuando muchas veces el archivo
+        # simplemente no está en esa ruta.
+        if not str(source).isdigit() and not Path(str(source)).exists():
+            raise FileNotFoundError(
+                f"[pipeline] No existe el archivo de video: {source}\n"
+                f"           Ruta absoluta buscada: {Path(str(source)).resolve()}"
+            )
+
         cap = cv2.VideoCapture(source)
         if not cap.isOpened():
-            raise RuntimeError(f"[pipeline] No se pudo abrir el video: {source}")
+            raise RuntimeError(
+                f"[pipeline] El archivo existe pero OpenCV no pudo abrirlo: {source}. "
+                "Puede ser un códec no soportado; prueba convertirlo a .mp4 (H.264)."
+            )
 
         fps = cap.get(cv2.CAP_PROP_FPS) or 25.0
         width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
@@ -306,10 +388,98 @@ class GondolaPipeline:
         # Inicializar estructura de zonas para el heatmap
         with open(self.zonas_path, "r", encoding="utf-8") as f:
             zonas_raw = json.load(f)
-        # Asegurar que frame_width/height están en el JSON (módulo 4 los necesita)
-        zonas_raw.setdefault("frame_width", width)
-        zonas_raw.setdefault("frame_height", height)
-        self.zonas_data_heatmap = zonas_raw
+        # Las zonas están dibujadas sobre la resolución declarada en zonas.json
+        # (768x576, la de vtest.avi). Antes se usaba setdefault, que NO cambia
+        # nada cuando el campo ya existe: en un video 1080p las zonas quedaban
+        # amontonadas en la esquina superior izquierda y el overlay del heatmap
+        # salía idéntico para cualquier video. Ahora se reproyectan.
+        if self.zonas_auto:
+            # Las zonas de zonas.json corresponden a OTRO video: escalarlas
+            # corrige la proporción pero no la ubicación, y los polígonos caen
+            # donde no hay góndolas (así es como todas las métricas terminan
+            # en cero). Aquí se proponen a partir de este video.
+            print("[pipeline] Proponiendo zonas a partir del video...")
+            muestras = muestrear_frames(str(self.video_source), n=20)
+
+            # Pasada rápida del detector sobre las muestras para saber por
+            # dónde camina la gente. Sin esta señal no se pueden separar
+            # pasillos ni cajas de pago: todo lo que tenga estructura se
+            # clasifica como góndola, y una caja contada como góndola mete la
+            # fila de pago dentro de la tasa de interacción.
+            print(f"[pipeline] Estimando tránsito sobre {len(muestras)} frames de muestra...")
+            detecciones_muestra = [
+                [d.to_dict() for d in self.detector.detect_frame(f)] for f in muestras
+            ]
+            n_personas = sum(len(d) for d in detecciones_muestra)
+            transito = transito_desde_detecciones(detecciones_muestra, width, height)
+            print(f"[pipeline] {n_personas} personas detectadas en las muestras")
+
+            propuesta = proponer_zonas(
+                muestras, width, height, transito_precalculado=transito
+            )
+            guardar_propuesta(propuesta, self.outdir / "zonas_propuestas.json")
+            if muestras:
+                dibujar_propuesta(
+                    muestras[0], propuesta, self.outdir / "zonas_propuestas.png"
+                )
+            conteo = propuesta["_propuesta"]["conteo"]
+            print(
+                f"[pipeline] Zonas propuestas: {conteo['gondola']} góndolas, "
+                f"{conteo['pasillo']} pasillos, {conteo['caja']} cajas"
+            )
+            print(f"[aviso] {propuesta['_propuesta']['advertencia']}")
+            zonas_raw = propuesta
+
+        self.zonas_data_heatmap, self.info_zonas = escalar_zonas(zonas_raw, width, height)
+
+        # La máquina de estados (módulo 1) construyó su layout en el
+        # constructor, cuando todavía no se conocía la resolución del video ni
+        # existía la propuesta automática. Si no se reconstruye aquí, el
+        # heatmap usa las zonas correctas y las métricas de interacción usan
+        # las viejas: dos módulos midiendo layouts distintos sobre el mismo
+        # video, sin ningún error visible.
+        self.maquina.layout = Layout(
+            [
+                Zona(
+                    zone_id=z["zone_id"],
+                    poligono=[(float(px), float(py)) for px, py in z["poligono"]],
+                    es_gondola=z.get("es_gondola"),
+                )
+                for z in self.zonas_data_heatmap.get("zonas", [])
+            ],
+            metadata={
+                k: v for k, v in self.zonas_data_heatmap.items() if k != "zonas"
+            },
+        )
+
+        # El módulo 5 (permanencia) tiene el mismo problema: recibe sus zonas
+        # en el constructor. Se le reinyectan las escaladas.
+        # load_zones_from_json() del módulo 5 lee de disco; aquí las zonas ya
+        # están en memoria (escaladas o propuestas), así que se arma el mismo
+        # formato que él espera: {zone_id: {"vertices": [...]}}.
+        self.dwell_analyzer.zones = {
+            z["zone_id"]: {"vertices": z["poligono"]}
+            for z in self.zonas_data_heatmap.get("zonas", [])
+        }
+        if self.info_zonas["escalado_aplicado"]:
+            print(
+                f"[pipeline] Zonas reproyectadas {self.info_zonas['resolucion_origen']} "
+                f"-> {self.info_zonas['resolucion_destino']}"
+            )
+        if not self.info_zonas["confiable"]:
+            print(f"[aviso] {self.info_zonas['advertencia']}")
+
+        if self.generar_video_anotado:
+            # El fps del video anotado es el efectivo tras el submuestreo, para
+            # que se reproduzca a la misma velocidad real que el original.
+            self._writer_video = VideoAnotado(
+                self.outdir / "video_anotado.mp4",
+                fps=max(1.0, fps / self.frame_skip),
+                ancho=width,
+                alto=height,
+                zonas=self.zonas_data_heatmap.get("zonas", []),
+                anonimizador=self.anonimizador,
+            )
         # Nota: no se construyen aquí las máscaras de zona. build_heatmap_and_counts()
         # las arma internamente (heatmap_generator.py línea 81), así que hacerlo
         # también aquí era trabajo repetido sobre un resultado que se descartaba.
@@ -324,15 +494,26 @@ class GondolaPipeline:
             if self.max_frames is not None and frame_id >= self.max_frames:
                 break
 
+            # Submuestreo: procesar 1 de cada N frames. A 30 fps, saltar 2 de
+            # cada 3 no cambia las métricas (nadie cruza una góndola en 33 ms)
+            # y divide por 3 el tiempo de inferencia, que es donde se va
+            # prácticamente todo el costo del pipeline.
+            if frame_id % self.frame_skip != 0:
+                frame_id += 1
+                continue
+
             timestamp_ms = (frame_id / fps) * 1000.0
 
             # Guardar primer frame para el heatmap de fondo
-            if frame_id == 0:
-                self._frame_ref = frame.copy()
-
             # ── Etapa 2: Detección ───────────────────────────────────────────
             detecciones = self.detector.detect_frame(frame)
             det_dicts = [d.to_dict() for d in detecciones]
+
+            # Anonimización: el frame de referencia es el fondo del heatmap, o
+            # sea la única imagen del video que sale del backend. Se difuminan
+            # las cabezas ANTES de guardarlo, no después.
+            if frame_id == 0:
+                self._frame_ref = self.anonimizador.aplicar(frame, det_dicts)
 
             self._fh_detecciones.write(
                 json.dumps(
@@ -379,7 +560,15 @@ class GondolaPipeline:
                 self._fh_dwell.write(json.dumps(ev, ensure_ascii=False) + "\n")
 
             # ── Etapa 1: Detección de eventos ────────────────────────────────
+            n_eventos_previos = len(self.maquina.eventos)
             self.maquina.process_frame(timestamp_ms, tracks)
+            eventos_nuevos = self.maquina.eventos[n_eventos_previos:]
+
+            # ── Etapa 6: Video anotado ───────────────────────────────────────
+            if self._writer_video is not None:
+                self._writer_video.escribir(
+                    frame, det_dicts, tracks, eventos_nuevos, timestamp_ms
+                )
 
             self._frames_procesados += 1
             self._total_detecciones += len(det_dicts)
@@ -395,6 +584,10 @@ class GondolaPipeline:
                 )
 
         cap.release()
+
+        if self._writer_video is not None:
+            info_video = self._writer_video.cerrar()
+            print(f"[pipeline] Video anotado: {info_video['frames']} frames -> {info_video['ruta']}")
 
         # ── Finalizar módulos ────────────────────────────────────────────────
         self.dwell_analyzer.finalize(self._ultimo_ts)
@@ -428,6 +621,11 @@ class GondolaPipeline:
 
     def _guardar_salidas(self, meta: dict[str, Any]) -> dict[str, Any]:
         """Genera y guarda todas las salidas finales del pipeline."""
+
+        meta["escena"] = self.escena
+        meta["zonas"] = self.info_zonas
+        meta["frame_skip"] = self.frame_skip
+        meta["rostros_anonimizados"] = self.anonimizador.rostros_cubiertos
 
         # ── Módulo 4: Heatmap ────────────────────────────────────────────────
         print("[pipeline] Generando heatmap (módulo 4 — Arturo)...")
@@ -484,8 +682,23 @@ class GondolaPipeline:
                     n_compliance += 1
 
         # Métricas del embudo por góndola
-        layout = cargar_layout(self.zonas_path)
-        metricas = calcular_metricas(eventos, [z.zone_id for z in layout.gondolas])
+        # Se usa el layout de la máquina de estados, NO se relee zonas.json:
+        # con --zonas-auto o tras el escalado, el archivo en disco ya no
+        # corresponde a las zonas con las que se midió. Releerlo dejaba las
+        # métricas listando góndolas que no se usaron.
+        metricas = calcular_metricas(
+            eventos, [z.zone_id for z in self.maquina.layout.gondolas]
+        )
+
+        # Recomendaciones: diagnóstico determinista y, si hay ANTHROPIC_API_KEY,
+        # redacción con modelo. Sin la clave sigue funcionando con plantillas.
+        resultado_reco = generar_recomendaciones(metricas, usar_ia=self.usar_ia)
+        metricas["recomendaciones"] = resultado_reco["recomendaciones"]
+        metricas["recomendaciones_fuente"] = resultado_reco["fuente"]
+        print(
+            f"[pipeline] Recomendaciones: {len(resultado_reco['recomendaciones'])} "
+            f"(fuente: {resultado_reco['fuente']})"
+        )
         metricas["meta"] = {
             "video_ref": str(self.video_source),
             "frames_procesados": self._frames_procesados,
@@ -604,6 +817,58 @@ def parse_args() -> argparse.Namespace:
         help="Colormap del heatmap (default: turbo)",
     )
     parser.add_argument(
+        "--sin-ia",
+        action="store_true",
+        help="Recomendaciones solo por reglas, sin llamar al modelo de lenguaje",
+    )
+    parser.add_argument(
+        "--reportes",
+        action="store_true",
+        help="Genera además reporte_gondhawk.pdf/.xlsx/.docx",
+    )
+    parser.add_argument(
+        "--zonas-auto",
+        action="store_true",
+        help=(
+            "Propone zonas a partir de ESTE video en vez de usar zonas.json. "
+            "Úsalo cuando el video no corresponde al layout ya definido; revisa "
+            "siempre la propuesta antes de presentar métricas."
+        ),
+    )
+    parser.add_argument(
+        "--sin-video-anotado",
+        action="store_true",
+        help="No generar video_anotado.mp4 (ahorra tiempo y espacio)",
+    )
+    parser.add_argument(
+        "--frame-skip",
+        type=int,
+        default=1,
+        help="Procesar 1 de cada N frames (default: 1 = todos; 3 triplica la velocidad)",
+    )
+    parser.add_argument(
+        "--sin-anonimizar",
+        action="store_true",
+        help="Desactiva el difuminado de rostros (NO usar con video de personas reales)",
+    )
+    parser.add_argument(
+        "--modo-anonimizacion",
+        choices=["blur", "pixelado", "solido"],
+        default="blur",
+        help="Cómo se tapa la región de cabeza (default: blur)",
+    )
+    parser.add_argument(
+        "--sin-verificar-escena",
+        action="store_true",
+        help="Omite la verificación de que el video sea de una superficie comercial",
+    )
+    parser.add_argument(
+        "--umbral-escena",
+        type=float,
+        default=0.45,
+        help="Puntaje mínimo para aceptar el video como retail (default: 0.45)",
+    )
+    parser.add_argument(
         "--max-frames",
         type=int,
         default=None,
@@ -625,6 +890,14 @@ def main() -> None:
         gracia_frames=args.gracia_frames,
         modo_alcance=args.modo_alcance,
         max_frames=args.max_frames,
+        anonimizar=not args.sin_anonimizar,
+        modo_anonimizacion=args.modo_anonimizacion,
+        verificar_escena=not args.sin_verificar_escena,
+        umbral_escena=args.umbral_escena,
+        frame_skip=args.frame_skip,
+        video_anotado=not args.sin_video_anotado,
+        zonas_auto=args.zonas_auto,
+        usar_ia=not args.sin_ia,
         model_path=args.model,
         conf_threshold=args.conf,
         colormap=args.colormap,
@@ -632,6 +905,15 @@ def main() -> None:
 
     print("\n[pipeline] ▶  Iniciando pipeline completo — GondHawk (Laura)\n")
     resumen = pipeline.run()
+
+    if args.reportes:
+        from reportes import generar
+
+        for formato in ("pdf", "excel", "word"):
+            try:
+                print(f"[ok] Reporte {formato}: {generar(formato, args.outdir)}")
+            except ImportError as exc:
+                print(f"[aviso] Falta dependencia para {formato}: {exc}")
 
     # ── Consola final ────────────────────────────────────────────────────────
     print("\n" + "─" * 60)

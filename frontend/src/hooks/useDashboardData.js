@@ -8,12 +8,30 @@ const EMPTY_DATA = {
   resumenPipeline: {},
   conteoZonas: [],
   heatmapUrl: null,
+  videoAnotadoUrl: null,
+  zonasPropuestasUrl: null,
+  analisisId: null,
+  reportes: null,
 };
+
+function absoluta(ruta, cacheKey) {
+  if (!ruta) return null;
+  const base = ruta.startsWith('http') ? ruta : `${DATA_SOURCES.apiBase}${ruta}`;
+  return cacheKey ? `${base}?analysis=${cacheKey}` : base;
+}
 
 export function normalizeAnalysisResponse(payload, cacheKey = '') {
   const interaction = payload?.interaction ?? payload ?? {};
   const pipeline = payload?.pipeline ?? {};
   const conteo = payload?.conteo_zonas ?? { zonas: [] };
+  const analisisId = payload?.analisis_id ?? null;
+
+   // El heatmap y el video SIEMPRE se sirven desde la carpeta del análisis.
+  // payload.heatmap_url quedó guardado apuntando a /api/videos/heatmap, que
+  // devuelve el último heatmap generado: al abrir un análisis del historial
+  // mostraba la imagen del análisis más reciente.
+  const archivoDelAnalisis = (nombre) =>
+    analisisId ? absoluta(`/api/analisis/${analisisId}/archivo/${nombre}`, cacheKey) : null;
 
   return {
     zonasGondola: Array.isArray(interaction.zonas) ? interaction.zonas : [],
@@ -21,9 +39,11 @@ export function normalizeAnalysisResponse(payload, cacheKey = '') {
     alertas: Array.isArray(interaction.alertas) ? interaction.alertas : [],
     resumenPipeline: pipeline,
     conteoZonas: Array.isArray(conteo.zonas) ? conteo.zonas : [],
-    heatmapUrl: payload?.heatmap_url
-      ? `${DATA_SOURCES.apiBase}${payload.heatmap_url}${cacheKey ? `?analysis=${cacheKey}` : ''}`
-      : null,
+    heatmapUrl: archivoDelAnalisis('heatmap.png') ?? absoluta(payload?.heatmap_url, cacheKey),
+    videoAnotadoUrl: archivoDelAnalisis('video_anotado.mp4') ?? absoluta(payload?.video_anotado_url, cacheKey),
+    zonasPropuestasUrl: archivoDelAnalisis('zonas_propuestas.png'),
+    analisisId,
+    reportes: payload?.reportes ?? null,
   };
 }
 

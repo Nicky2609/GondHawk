@@ -195,3 +195,49 @@ Los tests verifican:
 | `pytest` no se reconoce como comando, aunque `pip install pytest` diga "already satisfied" | El `.exe` de pytest no quedó en el PATH (típico en Python de Microsoft Store en Windows) | Usa `python -m pytest pipeline/tests/test_pipeline.py -v` |
 | `pip install -r pipeline/requirements.txt` no encuentra `ultralytics` | Entorno sin acceso a internet (por ejemplo un sandbox aislado) | Ejecuta la instalación en tu máquina local con conexión a internet |
 | `0 tomas → 0 devoluciones` con `data/vtest.avi` | Ese video de prueba no tiene interacciones reales con estantes | Es el comportamiento esperado; usa el dataset real/sintético del reto para ver tomas y devoluciones |
+---
+
+## Novedades del backend (4 de septiembre)
+
+### Escalado de zonas
+`zonas.json` está dibujado sobre 768x576. Antes se aplicaba tal cual a
+cualquier video, así que en 1080p las zonas cubrían el 9% del frame, todas en
+la esquina: por eso el overlay del heatmap parecía una plantilla fija. Ahora se
+reproyectan a la resolución real (`preproceso.escalar_zonas`).
+
+### Anonimización
+Se difumina la región de cabeza de cada persona detectada antes de guardar
+cualquier imagen. No usa detección de rostros a propósito: localizar una cara
+es computar el dato biométrico que el reto excluye.
+
+    --sin-anonimizar          desactiva (NO usar con personas reales)
+    --modo-anonimizacion      blur | pixelado | solido
+
+### Verificación de escena
+Rechaza videos que no son de una superficie comercial antes de gastar la
+inferencia. Heurística geométrica, no un clasificador entrenado; hay que
+presentarlo así.
+
+    --umbral-escena 0.45      puntaje mínimo
+    --sin-verificar-escena    omite la verificación
+
+### Video anotado
+Genera `video_anotado.mp4` con cajas, IDs de color estable, estelas de
+trayectoria, marcadores de TOMA/DEVUELVE y rostros difuminados.
+
+    --sin-video-anotado       no generarlo
+
+### Rendimiento
+    --frame-skip 3            procesa 1 de cada 3 frames
+
+A 30 fps no cambia las métricas (nadie cruza una góndola en 33 ms) y divide por
+tres el tiempo de inferencia. La API lo usa por defecto.
+
+### Historial
+Cada análisis queda en `output/analisis/<id>/` con su propio resumen, indexado
+en `output/indice.json`. Endpoints nuevos:
+
+    GET    /api/analisis                              lista + estadísticas
+    GET    /api/analisis/{id}                          detalle
+    GET    /api/analisis/{id}/archivo/{nombre}         heatmap, video, JSON
+    DELETE /api/analisis/{id}                          eliminar
