@@ -9,7 +9,7 @@ import { useState } from 'react';
  * muestra si las está midiendo en el lugar correcto. Un análisis puede fallar
  * en cualquiera de las dos y las métricas se ven igual de plausibles.
  */
-export function VideoPanel({ videoUrl, zonasUrl, embebido = false }) {
+export function VideoPanel({ videoUrl, zonasUrl, embebido = false, onTimeUpdate }) {
   const [vista, setVista] = useState('video');
   const [errorVideo, setErrorVideo] = useState(false);
 
@@ -52,6 +52,8 @@ export function VideoPanel({ videoUrl, zonasUrl, embebido = false }) {
             className="w-full bg-black"
             preload="metadata"
             onError={() => setErrorVideo(true)}
+            onTimeUpdate={(e) => onTimeUpdate?.(e.currentTarget.currentTime)}
+            onSeeked={(e) => onTimeUpdate?.(e.currentTarget.currentTime)}
           >
             Tu navegador no puede reproducir este video.
           </video>

@@ -12,6 +12,7 @@ import { StoreMapPanel } from './components/storemap/StoreMapPanel';
 import { FunnelPanel } from './components/dashboard/FunnelPanel';
 import { PerformanceTable } from './components/dashboard/PerformanceTable';
 import { PrivacyBar } from './components/dashboard/PrivacyBar';
+import { DayRecapPanel } from './components/dashboard/DayRecapPanel';
 import { HistoryPanel } from './components/history/HistoryPanel';
 import { ReportDownloads } from './components/reports/ReportDownloads';
 import { ANALYSIS_DEFAULTS, DATA_SOURCES, buildAnalyzeUrl } from './config/dataConfig';
@@ -34,6 +35,7 @@ export default function App() {
   const [fuenteReco, setFuenteReco] = useState(null);
   const [historialKey, setHistorialKey] = useState(0);
   const [zonaSeleccionada, setZonaSeleccionada] = useState(null);
+  const [videoTime, setVideoTime] = useState(0);
 
   useEffect(() => {
     return () => {
@@ -276,6 +278,12 @@ export default function App() {
 
           <KpiStrip resumen={resumen} />
 
+          <DayRecapPanel
+            totalGlobal={currentData.totalGlobal}
+            zonasGondola={currentData.zonasGondola}
+            conteoZonas={currentData.conteoZonas}
+          />
+
           {/* Fila principal: video, heatmap y embudo, como en el tablero de
               referencia. En pantallas menores a 1200px se apilan solos. */}
           <div id="video" className="dashboard-grid dashboard-grid-3">
@@ -288,6 +296,7 @@ export default function App() {
                 videoUrl={currentData.videoAnotadoUrl}
                 zonasUrl={currentData.zonasPropuestasUrl}
                 embebido
+                onTimeUpdate={setVideoTime}
               />
             </section>
 
@@ -310,8 +319,8 @@ export default function App() {
             <StoreMapPanel
               zonasData={currentData.zonasPropuestas}
               conteoZonas={currentData.conteoZonas}
-              videoWidth={currentData.resumenPipeline?.frame_width}
-              videoHeight={currentData.resumenPipeline?.frame_height}
+              tracking={currentData.tracking}
+              currentTimeSec={videoTime}
             />
           </section>
 

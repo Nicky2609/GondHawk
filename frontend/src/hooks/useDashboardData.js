@@ -14,6 +14,7 @@ const EMPTY_DATA = {
   heatmapMatrix: null,
   analisisId: null,
   reportes: null,
+  tracking: null,
 };
 
 function absoluta(ruta, cacheKey) {
@@ -30,6 +31,29 @@ async function fetchJson(url) {
     // ignore
   }
   return null;
+}
+
+// tracking.jsonl es una línea de JSON por frame, no un único documento JSON.
+async function fetchJsonl(url) {
+  try {
+    const resp = await fetch(url);
+    if (!resp.ok) return null;
+    const texto = await resp.text();
+    return texto
+      .split('\n')
+      .map((linea) => linea.trim())
+      .filter(Boolean)
+      .map((linea) => {
+        try {
+          return JSON.parse(linea);
+        } catch {
+          return null;
+        }
+      })
+      .filter(Boolean);
+  } catch {
+    return null;
+  }
 }
 
 export function normalizeAnalysisResponse(payload, cacheKey = '') {
@@ -62,20 +86,33 @@ export function useDashboardData() {
     const normalized = normalizeAnalysisResponse(payload, cacheKey);
     let zonasPropuestas = null;
     let heatmapMatrix = null;
+    let tracking = null;
+    let conteoZonas = normalized.conteoZonas;
 
     if (normalized.analisisId) {
       zonasPropuestas = await fetchJson(absoluta(`/api/analisis/${normalized.analisisId}/archivo/zonas_propuestas.json`, cacheKey));
       const heatmapRaw = await fetchJson(absoluta(`/api/analisis/${normalized.analisisId}/archivo/heatmap_raw.npy`, cacheKey));
       heatmapMatrix = heatmapRaw;
+      tracking = await fetchJsonl(absoluta(`/api/analisis/${normalized.analisisId}/archivo/tracking.jsonl`, cacheKey));
+
+      // Los análisis abiertos desde el historial no traen conteo_zonas en su
+      // resumen guardado (solo se incluye en la respuesta del análisis en
+      // vivo), así que si vino vacío se busca el archivo suelto.
+      if (!conteoZonas.length) {
+        const conteo = await fetchJson(absoluta(`/api/analisis/${normalized.analisisId}/archivo/conteo_zonas.json`, cacheKey));
+        conteoZonas = Array.isArray(conteo?.zonas) ? conteo.zonas : [];
+      }
     } else if (payload?.pipeline?.salidas?.heatmap) {
       const heatmapPath = payload.pipeline.salidas.heatmap;
       const zonasPath = heatmapPath.replace('heatmap.png', 'zonas_propuestas.json');
       const rawPath = heatmapPath.replace('heatmap.png', 'heatmap_raw.npy');
+      const trackingPath = heatmapPath.replace('heatmap.png', 'tracking.jsonl');
       zonasPropuestas = await fetchJson(absoluta(zonasPath, cacheKey));
       heatmapMatrix = await fetchJson(absoluta(rawPath, cacheKey));
+      tracking = await fetchJsonl(absoluta(trackingPath, cacheKey));
     }
 
-    setData({ ...normalized, zonasPropuestas, heatmapMatrix });
+    setData({ ...normalized, conteoZonas, zonasPropuestas, heatmapMatrix, tracking });
   }, []);
 
   function resetData() {
