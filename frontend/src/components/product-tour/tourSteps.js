@@ -35,6 +35,11 @@ export const TOUR_STEPS = [
     content: 'Este embudo resume el recorrido físico: personas que pasan, se detienen, toman un producto, lo devuelven o generan una posible conversión.',
   },
   {
+    target: '[data-tour="store-map"]',
+    title: 'Mapa de tienda',
+    content: 'Esta vista cenital muestra la distribución de las zonas de la tienda y permite visualizar el recorrido de las personas durante el análisis.',
+  },
+  {
     target: '[data-tour="performance"]',
     title: 'Rendimiento por góndola',
     content: 'Compara el flujo, dwell time, interacción, rechazo y estado de cada góndola para detectar oportunidades de mejora.',
@@ -45,14 +50,14 @@ export const TOUR_STEPS = [
     content: 'Aquí aparecen recomendaciones generadas a partir de las métricas del análisis para apoyar decisiones de distribución y space management.',
   },
   {
-    target: '[data-tour="history"]',
-    title: 'Historial',
-    content: 'Consulta análisis guardados anteriormente y vuelve a abrirlos cuando necesites revisar sus resultados.',
-  },
-  {
     target: '[data-tour="reports"]',
     title: 'Descarga tus reportes',
     content: 'Después de cargar un análisis podrás descargar sus resultados en PDF, Excel o Word. Si todavía no hay un análisis disponible, este paso se omite.',
+  },
+  {
+    target: '[data-tour="history"]',
+    title: 'Historial',
+    content: 'Consulta análisis guardados anteriormente y vuelve a abrirlos cuando necesites revisar sus resultados.',
   },
   {
     target: '[data-tour="privacy"]',

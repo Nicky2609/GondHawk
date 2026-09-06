@@ -113,10 +113,7 @@ export function ProductTour({ isOpen, onClose }) {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, onClose]);
 
-  const availableCount = useMemo(
-    () => TOUR_STEPS.filter((step) => targetExists(step)).length,
-    [],
-  );
+  const availableCount = TOUR_STEPS.filter((step) => targetExists(step)).length;
 
   const visiblePosition = useMemo(() => {
     let position = 0;
