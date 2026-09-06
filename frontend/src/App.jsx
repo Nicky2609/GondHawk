@@ -289,9 +289,8 @@ export default function App() {
             conteoZonas={currentData.conteoZonas}
           />
 
-          {/* Fila principal: video, heatmap y embudo, como en el tablero de
-              referencia. En pantallas menores a 1200px se apilan solos. */}
-          <div id="video" className="dashboard-grid dashboard-grid-3">
+{/* Primera fila: Video + Mapa de calor */}
+          <div id="video" className="dashboard-grid dashboard-grid-2">
             <section className="panel">
               <div className="panel-head">
                 <h3>Video analizado</h3>
@@ -309,27 +308,28 @@ export default function App() {
               <div className="panel-head"><h3>Mapa de calor de flujo</h3></div>
               <HeatmapPanel heatmapUrl={currentData.heatmapUrl} />
             </section>
+          </div>
 
+          {/* Segunda fila: Embudo + Mapa de tienda */}
+          <div className="dashboard-grid dashboard-grid-2">
             <FunnelPanel
               total={currentData.totalGlobal}
               zonas={currentData.zonasGondola}
               zonaSeleccionada={zonaSeleccionada}
               onSeleccionar={setZonaSeleccionada}
             />
+
+            <section id="mapa-tienda" className="panel" data-tour="store-map">
+              <StoreMapPanel
+                zonasData={currentData.zonasPropuestas}
+                conteoZonas={currentData.conteoZonas}
+                tracking={currentData.tracking}
+                currentTimeSec={videoTime}
+              />
+            </section>
           </div>
 
-          {/* Mapa de tienda (vista cenital) */}
-          <section id="mapa-tienda" className="panel" data-tour="store-map">
-            <div className="panel-head"><h3>Mapa de tienda (vista cenital)</h3></div>
-            <StoreMapPanel
-              zonasData={currentData.zonasPropuestas}
-              conteoZonas={currentData.conteoZonas}
-              tracking={currentData.tracking}
-              currentTimeSec={videoTime}
-            />
-          </section>
-
-          {/* Segunda fila: rendimiento por góndola y recomendaciones */}
+          {/* Tercera fila: Estado góndola + Recomendaciones */}
           <div id="estado-gondola" className="dashboard-grid dashboard-grid-2">
             <PerformanceTable
               zonas={currentData.zonasGondola}

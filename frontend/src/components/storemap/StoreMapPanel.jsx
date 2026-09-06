@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useRef, useEffect } from 'react';
 import { MapPin, ShoppingCart, ArrowRightLeft, Info } from 'lucide-react';
 
 const ZONE_COLORS = {
@@ -34,7 +34,7 @@ function polygonArea(polygon) {
   return Math.abs(area) / 2;
 }
 
-function computeProjection(zones, mapWidth, mapHeight, padding = 40) {
+function computeProjection(zones, mapWidth, mapHeight, padding = 16) {
   const allPoints = zones.flatMap(z => z.poligono || []);
   if (allPoints.length === 0) return null;
 
@@ -80,20 +80,6 @@ function transformToTopDown(zones, projection) {
   });
 }
 
-// Busca el índice del frame de tracking.jsonl cuyo timestamp está más cerca
-// del tiempo actual del video (búsqueda binaria porque los frames vienen
-// ordenados por timestamp).
-function findClosestFrameIndex(frames, timeMs) {
-  if (!frames || frames.length === 0) return -1;
-  let lo = 0, hi = frames.length - 1;
-  while (lo < hi) {
-    const mid = (lo + hi) >> 1;
-    if (frames[mid].timestamp_ms < timeMs) lo = mid + 1;
-    else hi = mid;
-  }
-  return lo;
-}
-
 const PERSON_COLORS = ['#f97316', '#38bdf8', '#a78bfa', '#f43f5e', '#22d3ee', '#facc15', '#4ade80', '#fb7185'];
 
 function colorForPersonId(id) {
@@ -105,15 +91,8 @@ function footPoint(bbox, projection) {
   return projection.project((x1 + x2) / 2, y2);
 }
 
-// Cuántos milisegundos de recorrido reciente se dibujan detrás de cada
-// persona. 2.5s da una estela visible sin saturar el mapa cuando hay
-// varias personas cruzándose.
 const TRAIL_WINDOW_MS = 2500;
 
-// Recolecta, por persona, sus posiciones en los frames previos al actual
-// dentro de TRAIL_WINDOW_MS, para dibujarlas como una estela que se
-// desvanece — así el mapa se ve como un replay del recorrido real y no
-// como puntos que saltan de una posición a otra.
 function buildTrails(frames, currentIndex, projection) {
   const trails = new Map();
   if (currentIndex < 0 || !projection) return trails;
@@ -134,44 +113,15 @@ function buildTrails(frames, currentIndex, projection) {
   return trails;
 }
 
-function pointInPolygon(x, y, polygon) {
-  let inside = false;
-  for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
-    const [xi, yi] = polygon[i];
-    const [xj, yj] = polygon[j];
-    const intersects = (yi > y) !== (yj > y) && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi;
-    if (intersects) inside = !inside;
+function findClosestFrameIndex(frames, timeMs) {
+  if (!frames || frames.length === 0) return -1;
+  let lo = 0, hi = frames.length - 1;
+  while (lo < hi) {
+    const mid = (lo + hi) >> 1;
+    if (frames[mid].timestamp_ms < timeMs) lo = mid + 1;
+    else hi = mid;
   }
-  return inside;
-}
-
-// Para cada zona, qué porcentaje del tiempo transcurrido llevaba al menos
-// una persona dentro de su polígono, acumulado desde el inicio del video.
-// Se calcula una vez sobre todo tracking.jsonl (barato: pocos cientos de
-// miles de operaciones) para que, al reproducir, el % — y con él la
-// intensidad del color — vaya subiendo en vivo en vez de mostrar solo el
-// dato final, dejando ver en qué góndola se fue concentrando la gente.
-function buildOccupancyTimeline(zones, frames) {
-  const timeline = new Map();
-  if (!frames || frames.length === 0) return timeline;
-
-  for (const zone of zones) {
-    const polygon = zone.poligono;
-    if (!polygon || polygon.length < 3) continue;
-    const pct = new Float32Array(frames.length);
-    let occupiedFrames = 0;
-    for (let i = 0; i < frames.length; i++) {
-      const tracks = frames[i].tracks || [];
-      const present = tracks.some(track => {
-        const [x1, , x2, y2] = track.bbox;
-        return pointInPolygon((x1 + x2) / 2, y2, polygon);
-      });
-      if (present) occupiedFrames++;
-      pct[i] = (occupiedFrames / (i + 1)) * 100;
-    }
-    timeline.set(zone.zone_id, pct);
-  }
-  return timeline;
+  return lo;
 }
 
 function polygonToPath(polygon) {
@@ -181,9 +131,20 @@ function polygonToPath(polygon) {
 }
 
 export function StoreMapPanel({ zonasData, conteoZonas, tracking, currentTimeSec = 0 }) {
-  const [hoveredZone, setHoveredZone] = useState(null);
-  const [selectedZone, setSelectedZone] = useState(null);
-  const [mapSize, setMapSize] = useState({ width: 600, height: 450 });
+  
+  const containerRef = useRef(null);
+  const [mapSize, setMapSize] = useState({ width: 400, height: 250 });
+
+  useEffect(() => {
+    const resizeObserver = new ResizeObserver(entries => {
+      for (const entry of entries) {
+        const { width } = entry.contentRect;
+        setMapSize(prev => ({ width: Math.max(1, width - 32), height: 250 }));
+      }
+    });
+    if (containerRef.current) resizeObserver.observe(containerRef.current);
+    return () => resizeObserver.disconnect();
+  }, []);
 
   const mergedZones = useMemo(() => {
     if (!zonasData?.zonas) return [];
@@ -217,9 +178,6 @@ export function StoreMapPanel({ zonasData, conteoZonas, tracking, currentTimeSec
 
   const livePeople = useMemo(() => {
     if (!currentFrame || !projection) return [];
-    // Punto de apoyo (centro-inferior del bbox): aproxima dónde pisa la
-    // persona, no el centro del cuerpo, para que el punto caiga sobre el
-    // piso del mapa en vez de flotar a la altura del torso.
     return (currentFrame.tracks || []).map(track => {
       const [px, py] = footPoint(track.bbox, projection);
       return { id: track.person_id, x: px, y: py };
@@ -231,74 +189,34 @@ export function StoreMapPanel({ zonasData, conteoZonas, tracking, currentTimeSec
     return buildTrails(tracking, currentFrameIndex, projection);
   }, [hasTracking, tracking, currentFrameIndex, projection]);
 
-  const occupancyTimeline = useMemo(() => {
-    if (!hasTracking || !mergedZones.length) return new Map();
-    return buildOccupancyTimeline(mergedZones, tracking);
-  }, [hasTracking, mergedZones, tracking]);
-
-  // % de ocupación a mostrar para una zona: en vivo (creciendo con la
-  // reproducción) si hay tracking, o el dato final del análisis si no.
-  const occupancyFor = (zoneId, fallbackPct) => {
-    if (!hasTracking || currentFrameIndex < 0) return fallbackPct || 0;
-    const pctArray = occupancyTimeline.get(zoneId);
-    return pctArray ? pctArray[currentFrameIndex] : 0;
-  };
-
-  const topZone = useMemo(() => {
-    if (!hasTracking || currentFrameIndex < 0 || !transformedZones.length) return null;
-    let best = null;
-    for (const zone of transformedZones) {
-      const pct = occupancyFor(zone.zone_id, zone.occupancyPct);
-      if (pct > 0 && (!best || pct > best.pct)) best = { zone_id: zone.zone_id, pct };
-    }
-    return best;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hasTracking, currentFrameIndex, transformedZones, occupancyTimeline]);
-
   if (!hasData) {
     return (
-      <div className="overflow-hidden rounded-2xl border border-[var(--panel-border)] bg-[var(--panel)]">
-        <div className="flex min-h-72 items-center justify-center p-4 text-sm text-[var(--ink-muted)]">
-          El mapa de la tienda se generará después del análisis con zonas detectadas.
+      <div ref={containerRef} className="rounded-2xl border border-[var(--panel-border)] bg-[var(--panel)]" style={{ height: '250px' }}>
+        <div className="flex items-center justify-center h-full text-xs text-[var(--ink-muted)]">
+          Sin datos de zonas disponibles
         </div>
       </div>
     );
   }
 
   const totalVisits = transformedZones.reduce((sum, z) => sum + (z.visits || 0), 0);
-  const gondolaCount = transformedZones.filter(z => z.type === 'gondola').length;
-  const pasilloCount = transformedZones.filter(z => z.type === 'pasillo').length;
-  const cajaCount = transformedZones.filter(z => z.type === 'caja').length;
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-[var(--panel-border)] bg-[var(--panel)]">
-      <div className="flex items-center justify-between gap-3 border-b border-[var(--panel-border)] px-4 py-3">
-        <h3 className="text-sm font-medium">Mapa de tienda (vista cenital)</h3>
-        <div className="flex items-center gap-2">
+    <div ref={containerRef} className="rounded-2xl border border-[var(--panel-border)] bg-[var(--panel)] relative" style={{ height: '250px' }}>
+      <div className="flex items-center justify-between gap-2 border-b border-[var(--panel-border)] px-3 py-1.5">
+        <h3 className="text-xs font-medium">Mapa de tienda</h3>
+        <div className="flex items-center gap-1.5 text-[10px] text-[var(--ink-muted)]">
           {hasTracking && (
-            <span className="flex items-center gap-1.5 text-xs text-[var(--ink-muted)] px-2 py-1 rounded bg-[var(--background)]">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-              En vivo con el video
+            <span className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-[var(--background)]">
+              <span className="w-1 h-1 rounded-full bg-emerald-500 animate-pulse" />
+              En vivo
             </span>
           )}
-          <div className="flex gap-1 text-xs text-[var(--ink-muted)] px-2 py-1 rounded bg-[var(--background)]">
-            <span>{gondolaCount} góndolas</span>
-            <span>{pasilloCount} pasillos</span>
-            <span>{cajaCount} cajas</span>
-          </div>
+          <span>{transformedZones.length} zonas</span>
         </div>
       </div>
 
-      {topZone && (
-        <p className="px-4 pt-3 text-xs text-[var(--ink-muted)]">
-            <strong className="text-[var(--ink)]">{topZone.zone_id}</strong> es la zona con más tráfico hasta ahora ({topZone.pct.toFixed(0)}% del tiempo ocupada).
-        </p>
-      )}
-
-      <div className="relative p-4" onMouseMove={e => {
-        const rect = e.currentTarget.getBoundingClientRect();
-        setMapSize({ width: rect.width, height: rect.height });
-      }}>
+      <div className="p-2" style={{ height: `calc(100% - 34px)` }}>
         <svg
           width="100%"
           height="100%"
@@ -311,54 +229,32 @@ export function StoreMapPanel({ zonasData, conteoZonas, tracking, currentTimeSec
             width={mapSize.width}
             height={mapSize.height}
             fill="var(--background)"
-            rx="8"
+            rx="6"
           />
 
           {transformedZones.map(zone => {
-            const isHovered = hoveredZone === zone.zone_id;
-            const isSelected = selectedZone === zone.zone_id;
             const path = polygonToPath(zone.polygon);
             const [cx, cy] = zone.centroid;
-            const livePct = occupancyFor(zone.zone_id, zone.occupancyPct);
-            // Más tiempo ocupada la zona → color más intenso. El piso de
-            // 0.12 mantiene visible el contorno de zonas vacías; el tope de
-            // 0.9 evita que tape la etiqueta al llegar al 100%.
+            const livePct = zone.occupancyPct;
             const fillOpacity = Math.min(0.9, 0.12 + (livePct / 100) * 0.78);
             return (
-              <g
-                key={zone.zone_id}
-                onMouseEnter={() => setHoveredZone(zone.zone_id)}
-                onMouseLeave={() => setHoveredZone(null)}
-                onClick={() => setSelectedZone(s => s === zone.zone_id ? null : zone.zone_id)}
-                style={{ cursor: 'pointer' }}
-              >
+              <g key={zone.zone_id} style={{ cursor: 'pointer' }}>
                 <path
                   d={path}
                   fill={zone.color.border}
-                  fillOpacity={isHovered || isSelected ? Math.max(0.6, fillOpacity) : fillOpacity}
-                  stroke={isSelected ? 'var(--accent)' : zone.color.border}
-                  strokeWidth={isSelected ? 3 : isHovered ? 2.5 : 1.5}
-                  strokeDasharray={zone.type === 'pasillo' ? '6,4' : 'none'}
-                  style={{ transition: 'fill-opacity 0.3s, stroke-width 0.15s' }}
+                  fillOpacity={fillOpacity}
+                  stroke={zone.color.border}
+                  strokeWidth={1}
+                  strokeDasharray={zone.type === 'pasillo' ? '4,3' : 'none'}
                 />
-                {isHovered || isSelected ? (
-                  <circle
-                    cx={cx}
-                    cy={cy}
-                    r={Math.max(16, Math.min(28, Math.sqrt(zone.area) / 3))}
-                    fill="var(--background)"
-                    stroke="var(--accent)"
-                    strokeWidth={2}
-                  />
-                ) : null}
                 <text
                   x={cx}
-                  y={cy + 4}
+                  y={cy + 3}
                   textAnchor="middle"
                   dominantBaseline="central"
-                  fontSize={Math.max(9, Math.min(12, Math.sqrt(zone.area) / 8))}
+                  fontSize={Math.max(8, Math.min(11, Math.sqrt(zone.area) / 7))}
                   fill="var(--ink)"
-                  fontWeight={isSelected ? 700 : 500}
+                  fontWeight={500}
                   pointerEvents="none"
                 >
                   {zone.zone_id}
@@ -376,8 +272,8 @@ export function StoreMapPanel({ zonasData, conteoZonas, tracking, currentTimeSec
                   points={points.map(p => `${p.x},${p.y}`).join(' ')}
                   fill="none"
                   stroke={color}
-                  strokeWidth={2}
-                  strokeOpacity={0.3}
+                  strokeWidth={1.5}
+                  strokeOpacity={0.35}
                   strokeLinecap="round"
                   strokeLinejoin="round"
                 />
@@ -386,9 +282,9 @@ export function StoreMapPanel({ zonasData, conteoZonas, tracking, currentTimeSec
                     key={i}
                     cx={p.x}
                     cy={p.y}
-                    r={2}
+                    r={1.5}
                     fill={color}
-                    opacity={0.15 + 0.45 * (i / points.length)}
+                    opacity={0.15 + 0.5 * (i / points.length)}
                   />
                 ))}
               </g>
@@ -400,116 +296,27 @@ export function StoreMapPanel({ zonasData, conteoZonas, tracking, currentTimeSec
               <circle
                 cx={person.x}
                 cy={person.y}
-                r={9}
+                r={6}
                 fill={colorForPersonId(person.id)}
                 stroke="var(--panel)"
-                strokeWidth={2}
+                strokeWidth={1.5}
               />
               <text
                 x={person.x}
-                y={person.y - 13}
+                y={person.y - 9}
                 textAnchor="middle"
-                fontSize={10}
+                fontSize={8}
                 fontWeight={700}
                 fill="var(--ink)"
                 stroke="var(--panel)"
-                strokeWidth={3}
+                strokeWidth={2}
                 paintOrder="stroke"
               >
                 {person.id}
               </text>
             </g>
           ))}
-
-          {hoveredZone && (
-            <g pointerEvents="none">
-              {transformedZones
-                .filter(z => z.zone_id === hoveredZone)
-                .map(zone => {
-                  const [cx, cy] = zone.centroid;
-                  const color = zone.color;
-                  return (
-                    <g key={zone.zone_id} transform={`translate(${cx}, ${cy - 50})`}>
-                      <rect
-                        x="-70" y="-40"
-                        width="140" height="70"
-                        rx="6"
-                        fill="var(--panel)"
-                        stroke="var(--panel-border)"
-                        strokeWidth="1"
-                        filter="drop-shadow(0 4px 6px rgba(0,0,0,0.1))"
-                      />
-                      <text x="0" y="-18" textAnchor="middle" fontSize="11" fontWeight="600" fill="var(--ink)">
-                        {zone.zone_id}
-                      </text>
-                      <text x="0" y="-4" textAnchor="middle" fontSize="10" fill="var(--ink-muted)">
-                        {color.label} • {zone.visits} visitas
-                      </text>
-                      <text x="0" y="10" textAnchor="middle" fontSize="10" fill="var(--ink)">
-                        {occupancyFor(zone.zone_id, zone.occupancyPct).toFixed(1)}% ocupación
-                      </text>
-                    </g>
-                  );
-                })}
-            </g>
-          )}
         </svg>
-
-        <div className="absolute bottom-4 left-4 right-4 flex flex-wrap justify-center gap-3 text-xs text-[var(--ink-muted)]">
-          {Object.entries(ZONE_COLORS).map(([key, val]) => (
-            <span key={key} className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-[var(--background)] border border-[var(--panel-border)]">
-              <span
-                className="w-3 h-3 rounded"
-                style={{ backgroundColor: val.bg, border: `1px solid ${val.border}` }}
-              />
-              {val.label}
-            </span>
-          ))}
-        </div>
-      </div>
-
-      {selectedZone && (
-        <div className="border-t border-[var(--panel-border)] px-4 py-3 bg-[var(--background)]">
-          {transformedZones
-            .filter(z => z.zone_id === selectedZone)
-            .map(zone => {
-              const color = zone.color;
-              const Icon = color.icon;
-              return (
-                <div key={zone.zone_id} className="flex items-center gap-3 text-sm">
-                  <div
-                    className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
-                    style={{ backgroundColor: color.bg, border: `1px solid ${color.border}` }}
-                  >
-                    <Icon size={16} style={{ color: color.border }} />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium truncate">{zone.zone_id} — {color.label}</p>
-                    <p className="text-xs text-[var(--ink-muted)]">
-                      Visitas: {zone.visits} • Ocupación: {occupancyFor(zone.zone_id, zone.occupancyPct).toFixed(1)}% • Área: {Math.round(zone.area)}px²
-                    </p>
-                  </div>
-                  <button
-                    onClick={() => setSelectedZone(null)}
-                    className="text-[var(--ink-muted)] hover:text-[var(--ink)]"
-                    aria-label="Cerrar detalle"
-                  >
-                    ✕
-                  </button>
-                </div>
-              );
-            })}
-        </div>
-      )}
-
-      <div className="border-t border-[var(--panel-border)] px-4 py-3 text-xs text-[var(--ink-muted)] flex flex-wrap gap-4">
-        <span>Total visitas: <strong className="text-[var(--ink)]">{totalVisits}</strong></span>
-        <span>Zonas detectadas: <strong className="text-[var(--ink)]">{transformedZones.length}</strong></span>
-        {hasTracking && (
-          <span>Personas ahora: <strong className="text-[var(--ink)]">{livePeople.length}</strong></span>
-        )}
-        <span className="flex-1"></span>
-        <span>{hasTracking ? 'Reproduce el video para ver el recorrido' : 'Click para detalles • Hover para info'}</span>
       </div>
     </div>
   );

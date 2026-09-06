@@ -1,48 +1,54 @@
 {
   "video_ref": "propuesta_automatica",
-  "frames_procesados": 1767,
+  "frames_procesados": 1135,
   "zonas": [
     {
       "zone_id": "gondola_auto_1",
-      "visitas_unicas": 6,
-      "frames_ocupada": 106,
-      "pct_tiempo_ocupada": 6.0
+      "visitas_unicas": 10,
+      "frames_ocupada": 1134,
+      "pct_tiempo_ocupada": 99.91
     },
     {
       "zone_id": "gondola_auto_2",
-      "visitas_unicas": 18,
-      "frames_ocupada": 230,
-      "pct_tiempo_ocupada": 13.02
+      "visitas_unicas": 0,
+      "frames_ocupada": 0,
+      "pct_tiempo_ocupada": 0.0
     },
     {
       "zone_id": "gondola_auto_3",
-      "visitas_unicas": 13,
-      "frames_ocupada": 211,
-      "pct_tiempo_ocupada": 11.94
+      "visitas_unicas": 1,
+      "frames_ocupada": 16,
+      "pct_tiempo_ocupada": 1.41
     },
     {
       "zone_id": "gondola_auto_4",
-      "visitas_unicas": 16,
-      "frames_ocupada": 268,
-      "pct_tiempo_ocupada": 15.17
-    },
-    {
-      "zone_id": "gondola_auto_5",
       "visitas_unicas": 4,
-      "frames_ocupada": 13,
-      "pct_tiempo_ocupada": 0.74
+      "frames_ocupada": 252,
+      "pct_tiempo_ocupada": 22.2
     },
     {
       "zone_id": "caja_1",
-      "visitas_unicas": 16,
-      "frames_ocupada": 206,
-      "pct_tiempo_ocupada": 11.66
+      "visitas_unicas": 0,
+      "frames_ocupada": 0,
+      "pct_tiempo_ocupada": 0.0
     },
     {
       "zone_id": "pasillo_1",
-      "visitas_unicas": 84,
-      "frames_ocupada": 1088,
-      "pct_tiempo_ocupada": 61.57
+      "visitas_unicas": 1,
+      "frames_ocupada": 51,
+      "pct_tiempo_ocupada": 4.49
+    },
+    {
+      "zone_id": "pasillo_2",
+      "visitas_unicas": 8,
+      "frames_ocupada": 1135,
+      "pct_tiempo_ocupada": 100.0
+    },
+    {
+      "zone_id": "pasillo_3",
+      "visitas_unicas": 0,
+      "frames_ocupada": 0,
+      "pct_tiempo_ocupada": 0.0
     }
   ]
 }
