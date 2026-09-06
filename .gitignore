@@ -6,6 +6,8 @@ venv/
 frontend/node_modules/
 frontend/dist/
 frontend/dist-ssr/
+frontend/public/data/*.json
+frontend/public/data/*.png
 *.local
 
 # Cachés y archivos temporales Python
