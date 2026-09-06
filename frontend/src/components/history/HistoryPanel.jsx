@@ -75,7 +75,7 @@ export function HistoryPanel({ onAbrir, recargar }) {
   };
 
   return (
-    <div className="rounded-2xl border border-[var(--panel-border)] bg-[var(--panel)] p-4">
+    <div className="rounded-2xl border border-[var(--panel-border)] bg-[var(--panel)] p-4" data-tour="history">
       <div className="mb-3 flex items-center justify-between">
         <div>
           <p className="text-xs text-[var(--ink-muted)]">Historial de análisis</p>

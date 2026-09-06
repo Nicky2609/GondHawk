@@ -13,6 +13,7 @@ import { PerformanceTable } from './components/dashboard/PerformanceTable';
 import { PrivacyBar } from './components/dashboard/PrivacyBar';
 import { HistoryPanel } from './components/history/HistoryPanel';
 import { ReportDownloads } from './components/reports/ReportDownloads';
+import { ProductTour } from './components/product-tour/ProductTour';
 import { ANALYSIS_DEFAULTS, DATA_SOURCES, buildAnalyzeUrl } from './config/dataConfig';
 import { BarChart3, Boxes, ChartNoAxesCombined, Clock, Gauge, House, Map, PlayCircle, ShieldCheck } from 'lucide-react';
 
@@ -33,6 +34,7 @@ export default function App() {
   const [fuenteReco, setFuenteReco] = useState(null);
   const [historialKey, setHistorialKey] = useState(0);
   const [zonaSeleccionada, setZonaSeleccionada] = useState(null);
+  const [tourOpen, setTourOpen] = useState(false);
 
   useEffect(() => {
     return () => {
@@ -170,7 +172,7 @@ export default function App() {
   return (
     <div className="app-shell">
       <aside className="sidebar">
-        <div className="brand"><span className="brand-mark"><Gauge size={16} /></span><p className="brand-name">GondHawk<span>Funcionalidades</span></p></div>
+        <div className="brand" data-tour="welcome"><span className="brand-mark"><Gauge size={16} /></span><p className="brand-name">GondHawk<span>Funcionalidades</span></p></div>
         <nav className="nav-list" aria-label="Navegación principal">
           <a className={`nav-item ${activeSection === 'cargar' ? 'active' : ''}`} href="#cargar"><House size={14} />Cargar video</a>
           <a className={`nav-item ${activeSection === 'video' ? 'active' : ''}`} href="#video"><PlayCircle size={14} />Video analizado</a>
@@ -180,6 +182,9 @@ export default function App() {
           <a className={`nav-item ${activeSection === 'recomendaciones' ? 'active' : ''}`} href="#recomendaciones"><BarChart3 size={14} />Recomendaciones</a>
           <a className={`nav-item ${activeSection === 'historial' ? 'active' : ''}`} href="#historial"><Clock size={14} />Historial</a>
         </nav>
+        <button type="button" className="product-tour-launch" onClick={() => setTourOpen(true)} aria-label="Ver recorrido guiado">
+          ? Ver tour
+        </button>
         <div className="sidebar-foot"><strong><ShieldCheck size={13} /> Privacidad por diseño</strong>Procesamiento local y métricas anónimas.</div>
       </aside>
 
@@ -200,7 +205,7 @@ export default function App() {
                   <button type="button" onClick={handleClearInformation} className="analyze-button">Limpiar información</button>
                 ) : (
                   <>
-                    <label className="upload-button">
+                    <label className="upload-button" data-tour="upload-video">
                       <input
                         ref={fileInputRef}
                         type="file"
@@ -210,7 +215,7 @@ export default function App() {
                       />
                       {selectedFile ? 'Cambiar video' : 'Seleccionar video'}
                     </label>
-                    <button type="button" onClick={handleAnalyze} disabled={processing} className="analyze-button">
+                    <button type="button" onClick={handleAnalyze} disabled={processing} className="analyze-button" data-tour="start-analysis">
                       {processing ? 'Analizando...' : 'Analizar video'}
                     </button>
                   </>
@@ -218,7 +223,7 @@ export default function App() {
               </div>
             </div>
 
-            <div className="analysis-options">
+            <div className="analysis-options" data-tour="analysis-options">
               <label className="analysis-option">
                 <input
                   type="checkbox"
@@ -289,7 +294,7 @@ export default function App() {
               />
             </section>
 
-            <section id="mapa-calor" className="panel">
+            <section id="mapa-calor" className="panel" data-tour="heatmap">
               <div className="panel-head"><h3>Mapa de calor de flujo</h3></div>
               <HeatmapPanel heatmapUrl={currentData.heatmapUrl} />
             </section>
@@ -310,7 +315,7 @@ export default function App() {
               onSeleccionar={setZonaSeleccionada}
             />
 
-            <section id="recomendaciones" className="panel">
+            <section id="recomendaciones" className="panel" data-tour="recommendations">
               <div className="panel-head"><h3>Recomendaciones</h3></div>
               <div className="panel-body">
                 <AlertsPanel
@@ -360,6 +365,7 @@ export default function App() {
 
         </div>
       </main>
+      <ProductTour isOpen={tourOpen} onClose={() => setTourOpen(false)} />
     </div>
   );
 }
