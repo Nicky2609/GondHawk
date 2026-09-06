@@ -1,79 +1,39 @@
 {
   "pipeline": "GondHawk — Integrante 6 (Laura)",
-  "video_fuente": "C:\\Users\\USUARIO\\GondHawk\\backend\\pipeline\\uploads\\videoplayback.mp4",
-  "frames_procesados": 3753,
-  "tiempo_procesamiento_seg": 193.4,
-  "total_detecciones": 7666,
-  "eventos_generados": 69,
-  "eventos_compliance": 69,
+  "video_fuente": "C:\\Semestre_8\\Hackaton\\Gondola\\GondHawk\\backend\\pipeline\\uploads\\DAT Ingenieria -- Cámara de Seguridad en Supermercado - dat-ingenieria (360p, h264, youtube).mp4",
+  "frames_procesados": 1135,
+  "tiempo_procesamiento_seg": 135.95,
+  "total_detecciones": 6072,
+  "eventos_generados": 29,
+  "eventos_compliance": 28,
   "embudo_global": {
-    "visitas": 69,
-    "se_detiene": 3,
-    "toma_producto": 0,
-    "devuelve": 0,
-    "tasa_interaccion": 0.0,
-    "tasa_rechazo": 0.0
+    "visitas": 23,
+    "se_detiene": 14,
+    "toma_producto": 3,
+    "devuelve": 2,
+    "tasa_interaccion": 0.2143,
+    "tasa_rechazo": 0.6667
   },
   "alertas": [
     {
       "zone_id": "gondola_auto_1",
-      "tipo": "zona_fria",
-      "mensaje": "8 visitas y solo 0 interacciones: hay trafico pero el producto no engancha."
-    },
-    {
-      "zone_id": "gondola_auto_1",
-      "tipo": "trafico_sin_parada",
-      "mensaje": "La gente pasa pero no se detiene: candidata a cambio de planograma o material visual."
-    },
-    {
-      "zone_id": "gondola_auto_2",
-      "tipo": "zona_fria",
-      "mensaje": "22 visitas y solo 0 interacciones: hay trafico pero el producto no engancha."
-    },
-    {
-      "zone_id": "gondola_auto_2",
-      "tipo": "trafico_sin_parada",
-      "mensaje": "La gente pasa pero no se detiene: candidata a cambio de planograma o material visual."
-    },
-    {
-      "zone_id": "gondola_auto_3",
-      "tipo": "zona_fria",
-      "mensaje": "16 visitas y solo 0 interacciones: hay trafico pero el producto no engancha."
-    },
-    {
-      "zone_id": "gondola_auto_3",
-      "tipo": "trafico_sin_parada",
-      "mensaje": "La gente pasa pero no se detiene: candidata a cambio de planograma o material visual."
+      "tipo": "rechazo_alto",
+      "mensaje": "2 de 3 productos tomados vuelven al estante: revisar precio, facing o informacion visible."
     },
     {
       "zone_id": "gondola_auto_4",
-      "tipo": "zona_fria",
-      "mensaje": "19 visitas y solo 0 interacciones: hay trafico pero el producto no engancha."
-    },
-    {
-      "zone_id": "gondola_auto_4",
-      "tipo": "trafico_sin_parada",
-      "mensaje": "La gente pasa pero no se detiene: candidata a cambio de planograma o material visual."
-    },
-    {
-      "zone_id": "gondola_auto_5",
       "tipo": "zona_fria",
       "mensaje": "4 visitas y solo 0 interacciones: hay trafico pero el producto no engancha."
-    },
-    {
-      "zone_id": "gondola_auto_5",
-      "tipo": "trafico_sin_parada",
-      "mensaje": "La gente pasa pero no se detiene: candidata a cambio de planograma o material visual."
     }
   ],
   "salidas": {
-    "detecciones": "C:\\Users\\USUARIO\\GondHawk\\backend\\pipeline\\output\\detecciones.jsonl",
-    "tracking": "C:\\Users\\USUARIO\\GondHawk\\backend\\pipeline\\output\\tracking.jsonl",
-    "dwell_time": "C:\\Users\\USUARIO\\GondHawk\\backend\\pipeline\\output\\dwell_time.jsonl",
-    "eventos_interaccion": "C:\\Users\\USUARIO\\GondHawk\\backend\\pipeline\\output\\eventos_interaccion.jsonl",
-    "eventos_compliance": "C:\\Users\\USUARIO\\GondHawk\\backend\\pipeline\\output\\eventos_compliance.jsonl",
-    "metricas_interaccion": "C:\\Users\\USUARIO\\GondHawk\\backend\\pipeline\\output\\metricas_interaccion.json",
-    "heatmap": "C:\\Users\\USUARIO\\GondHawk\\backend\\pipeline\\output\\heatmap.png",
-    "conteo_zonas": "C:\\Users\\USUARIO\\GondHawk\\backend\\pipeline\\output\\conteo_zonas.json"
+    "detecciones": "C:\\Semestre_8\\Hackaton\\Gondola\\GondHawk\\backend\\pipeline\\output\\detecciones.jsonl",
+    "tracking": "C:\\Semestre_8\\Hackaton\\Gondola\\GondHawk\\backend\\pipeline\\output\\tracking.jsonl",
+    "dwell_time": "C:\\Semestre_8\\Hackaton\\Gondola\\GondHawk\\backend\\pipeline\\output\\dwell_time.jsonl",
+    "eventos_interaccion": "C:\\Semestre_8\\Hackaton\\Gondola\\GondHawk\\backend\\pipeline\\output\\eventos_interaccion.jsonl",
+    "eventos_compliance": "C:\\Semestre_8\\Hackaton\\Gondola\\GondHawk\\backend\\pipeline\\output\\eventos_compliance.jsonl",
+    "metricas_interaccion": "C:\\Semestre_8\\Hackaton\\Gondola\\GondHawk\\backend\\pipeline\\output\\metricas_interaccion.json",
+    "heatmap": "C:\\Semestre_8\\Hackaton\\Gondola\\GondHawk\\backend\\pipeline\\output\\heatmap.png",
+    "conteo_zonas": "C:\\Semestre_8\\Hackaton\\Gondola\\GondHawk\\backend\\pipeline\\output\\conteo_zonas.json"
   }
 }
