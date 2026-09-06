@@ -10,7 +10,7 @@ const GARANTIAS = [
 
 export function PrivacyBar() {
   return (
-    <section className="panel privacy-panel">
+    <section className="panel privacy-panel" data-tour="privacy">
       <div className="panel-head"><h3>Privacidad por diseño</h3></div>
       <ul className="privacy-grid">
         {GARANTIAS.map(({ icono: Icono, texto }) => (

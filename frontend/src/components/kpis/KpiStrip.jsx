@@ -19,7 +19,7 @@ export function KpiStrip({ resumen }) {
   ];
 
   return (
-    <div className="kpi-grid">
+    <div className="kpi-grid" data-tour="metrics">
       {items.map((item) => {
         const Icono = ICONOS[item.id];
         return (

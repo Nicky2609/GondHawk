@@ -13,7 +13,7 @@ function pct(v) {
 export function PerformanceTable({ zonas, onSeleccionar, zonaSeleccionada }) {
   if (!zonas.length) {
     return (
-      <section className="panel">
+      <section className="panel" data-tour="performance">
         <div className="panel-head"><h3>Rendimiento por góndola</h3></div>
         <p className="panel-empty">Analiza un video para ver el rendimiento por zona.</p>
       </section>
@@ -21,7 +21,7 @@ export function PerformanceTable({ zonas, onSeleccionar, zonaSeleccionada }) {
   }
 
   return (
-    <section className="panel">
+    <section className="panel" data-tour="performance">
       <div className="panel-head"><h3>Rendimiento por góndola</h3></div>
       <div className="table-wrap">
         <table className="data-table">
