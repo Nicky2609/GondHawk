@@ -8,13 +8,14 @@ import { HeatmapPanel } from './components/heatmap/HeatmapPanel';
 import { ZoneFunnelTable } from './components/funnel/ZoneFunnelTable';
 import { AlertsPanel } from './components/alerts/AlertsPanel';
 import { VideoPanel } from './components/video/VideoPanel';
+import { StoreMapPanel } from './components/storemap/StoreMapPanel';
 import { FunnelPanel } from './components/dashboard/FunnelPanel';
 import { PerformanceTable } from './components/dashboard/PerformanceTable';
 import { PrivacyBar } from './components/dashboard/PrivacyBar';
 import { HistoryPanel } from './components/history/HistoryPanel';
 import { ReportDownloads } from './components/reports/ReportDownloads';
 import { ANALYSIS_DEFAULTS, DATA_SOURCES, buildAnalyzeUrl } from './config/dataConfig';
-import { BarChart3, Boxes, ChartNoAxesCombined, Clock, Gauge, House, Map, PlayCircle, ShieldCheck } from 'lucide-react';
+import { BarChart3, Boxes, ChartNoAxesCombined, Clock, Gauge, House, Map, MapPin, PlayCircle, ShieldCheck } from 'lucide-react';
 
 export default function App() {
   const { data, updateFromAnalysis, resetData } = useDashboardData();
@@ -41,7 +42,7 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    const sectionIds = ['cargar', 'video', 'mapa-calor', 'estado-gondola', 'embudo-gondola', 'recomendaciones', 'historial'];
+    const sectionIds = ['cargar', 'video', 'mapa-calor', 'mapa-tienda', 'estado-gondola', 'embudo-gondola', 'recomendaciones', 'historial'];
     const sections = sectionIds
       .map((id) => document.getElementById(id))
       .filter(Boolean);
@@ -175,6 +176,7 @@ export default function App() {
           <a className={`nav-item ${activeSection === 'cargar' ? 'active' : ''}`} href="#cargar"><House size={14} />Cargar video</a>
           <a className={`nav-item ${activeSection === 'video' ? 'active' : ''}`} href="#video"><PlayCircle size={14} />Video analizado</a>
           <a className={`nav-item ${activeSection === 'mapa-calor' ? 'active' : ''}`} href="#mapa-calor"><Map size={14} />Mapa de calor</a>
+          <a className={`nav-item ${activeSection === 'mapa-tienda' ? 'active' : ''}`} href="#mapa-tienda"><MapPin size={14} />Mapa de tienda</a>
           <a className={`nav-item ${activeSection === 'estado-gondola' ? 'active' : ''}`} href="#estado-gondola"><ChartNoAxesCombined size={14} />Estado por góndola</a>
           <a className={`nav-item ${activeSection === 'embudo-gondola' ? 'active' : ''}`} href="#embudo-gondola"><Boxes size={14} />Embudo por góndola</a>
           <a className={`nav-item ${activeSection === 'recomendaciones' ? 'active' : ''}`} href="#recomendaciones"><BarChart3 size={14} />Recomendaciones</a>
@@ -301,6 +303,17 @@ export default function App() {
               onSeleccionar={setZonaSeleccionada}
             />
           </div>
+
+          {/* Mapa de tienda (vista cenital) */}
+          <section id="mapa-tienda" className="panel">
+            <div className="panel-head"><h3>Mapa de tienda (vista cenital)</h3></div>
+            <StoreMapPanel
+              zonasData={currentData.zonasPropuestas}
+              conteoZonas={currentData.conteoZonas}
+              videoWidth={currentData.resumenPipeline?.frame_width}
+              videoHeight={currentData.resumenPipeline?.frame_height}
+            />
+          </section>
 
           {/* Segunda fila: rendimiento por góndola y recomendaciones */}
           <div id="estado-gondola" className="dashboard-grid dashboard-grid-2">

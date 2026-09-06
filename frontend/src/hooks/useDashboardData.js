@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { DATA_SOURCES } from '../config/dataConfig';
 
 const EMPTY_DATA = {
@@ -10,6 +10,8 @@ const EMPTY_DATA = {
   heatmapUrl: null,
   videoAnotadoUrl: null,
   zonasPropuestasUrl: null,
+  zonasPropuestas: null,
+  heatmapMatrix: null,
   analisisId: null,
   reportes: null,
 };
@@ -20,16 +22,22 @@ function absoluta(ruta, cacheKey) {
   return cacheKey ? `${base}?analysis=${cacheKey}` : base;
 }
 
+async function fetchJson(url) {
+  try {
+    const resp = await fetch(url);
+    if (resp.ok) return await resp.json();
+  } catch {
+    // ignore
+  }
+  return null;
+}
+
 export function normalizeAnalysisResponse(payload, cacheKey = '') {
   const interaction = payload?.interaction ?? payload ?? {};
   const pipeline = payload?.pipeline ?? {};
   const conteo = payload?.conteo_zonas ?? { zonas: [] };
   const analisisId = payload?.analisis_id ?? null;
 
-   // El heatmap y el video SIEMPRE se sirven desde la carpeta del análisis.
-  // payload.heatmap_url quedó guardado apuntando a /api/videos/heatmap, que
-  // devuelve el último heatmap generado: al abrir un análisis del historial
-  // mostraba la imagen del análisis más reciente.
   const archivoDelAnalisis = (nombre) =>
     analisisId ? absoluta(`/api/analisis/${analisisId}/archivo/${nombre}`, cacheKey) : null;
 
@@ -50,9 +58,25 @@ export function normalizeAnalysisResponse(payload, cacheKey = '') {
 export function useDashboardData() {
   const [data, setData] = useState(EMPTY_DATA);
 
-  function updateFromAnalysis(payload, cacheKey) {
-    setData(normalizeAnalysisResponse(payload, cacheKey));
-  }
+  const updateFromAnalysis = useCallback(async (payload, cacheKey) => {
+    const normalized = normalizeAnalysisResponse(payload, cacheKey);
+    let zonasPropuestas = null;
+    let heatmapMatrix = null;
+
+    if (normalized.analisisId) {
+      zonasPropuestas = await fetchJson(absoluta(`/api/analisis/${normalized.analisisId}/archivo/zonas_propuestas.json`, cacheKey));
+      const heatmapRaw = await fetchJson(absoluta(`/api/analisis/${normalized.analisisId}/archivo/heatmap_raw.npy`, cacheKey));
+      heatmapMatrix = heatmapRaw;
+    } else if (payload?.pipeline?.salidas?.heatmap) {
+      const heatmapPath = payload.pipeline.salidas.heatmap;
+      const zonasPath = heatmapPath.replace('heatmap.png', 'zonas_propuestas.json');
+      const rawPath = heatmapPath.replace('heatmap.png', 'heatmap_raw.npy');
+      zonasPropuestas = await fetchJson(absoluta(zonasPath, cacheKey));
+      heatmapMatrix = await fetchJson(absoluta(rawPath, cacheKey));
+    }
+
+    setData({ ...normalized, zonasPropuestas, heatmapMatrix });
+  }, []);
 
   function resetData() {
     setData(EMPTY_DATA);
