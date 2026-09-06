@@ -46,15 +46,15 @@ class ReachConfig:
     """Parametros de la deteccion de alcance."""
 
     # Histeresis sobre la expansion relativa del aspecto (w/h) del bbox.
-    umbral_entrada: float = 0.18   # +18% sobre la linea base -> empieza alcance
-    umbral_salida: float = 0.08    # vuelve por debajo de +8% -> termina alcance
+    umbral_entrada: float = 0.03   # antes 0.18
+    umbral_salida: float = 0.015    # antes 0.08
 
     ventana_baseline: int = 20     # frames de reposo usados para la mediana
     min_muestras_baseline: int = 5  # antes de esto no se declara ningun alcance
 
-    min_duracion_ms: float = 300.0    # gesto mas corto = ruido del detector
+    min_duracion_ms: float = 150.0    # gesto mas corto = ruido del detector
     max_duracion_ms: float = 8000.0   # gesto mas largo = bbox fusionado / error
-    min_frames: int = 2
+    min_frames: int = 1
 
     # Pose (solo PoseReachDetector): extension muneca-hombro normalizada por
     # la altura del torso.

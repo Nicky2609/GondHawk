@@ -75,29 +75,20 @@ class VideoAnotado:
         self.ruta = Path(ruta_salida)
         self.ruta.parent.mkdir(parents=True, exist_ok=True)
 
-        # Los navegadores solo reproducen H.264 dentro de MP4. mp4v (MPEG-4
-        # Part 2) produce un archivo válido que Chrome descarga pero no puede
-        # decodificar: se ve el reproductor vacío y la conexión se corta.
-        # Se intenta avc1 (H.264) primero y se cae a mp4v solo si la
-        # compilación de OpenCV no lo trae.
-        self.writer = None
-        for codec in ("avc1", "H264", "mp4v"):
-            writer = cv2.VideoWriter(
-                str(self.ruta), cv2.VideoWriter_fourcc(*codec), max(1.0, fps), (ancho, alto)
-            )
-            if writer.isOpened():
-                self.writer = writer
-                self.codec = codec
-                if codec == "mp4v":
-                    print(
-                        "[aviso] Video anotado en mp4v: los navegadores no lo "
-                        "reproducen. Conviértelo con: "
-                        "ffmpeg -i video_anotado.mp4 -vcodec libx264 salida.mp4"
-                    )
-                break
-            writer.release()
-
-        if self.writer is None:
+        # Se escribe siempre en mp4v y se reconvierte a H.264 al cerrar.
+        # Sondear códecs no sirve: con avc1, isOpened() devuelve True aunque el
+        # codificador de H.264 no se haya cargado, y el archivo queda
+        # inservible sin ningún error visible — el reproductor del navegador
+        # sale en negro. mp4v lo escribe cualquier compilación de OpenCV, y la
+        # conversión final resuelve la reproducción.
+        self.codec = "mp4v"
+        self.writer = cv2.VideoWriter(
+            str(self.ruta),
+            cv2.VideoWriter_fourcc(*self.codec),
+            max(1.0, fps),
+            (ancho, alto),
+        )
+        if not self.writer.isOpened():
             raise RuntimeError(f"No se pudo abrir el escritor de video en {self.ruta}")
 
         self.zonas = zonas or []
@@ -165,12 +156,68 @@ class VideoAnotado:
 
     def cerrar(self) -> dict[str, Any]:
         self.writer.release()
+        self._convertir_a_h264()
+
         return {
             "ruta": str(self.ruta),
             "frames": self._frames_escritos,
             "existe": self.ruta.exists(),
             "bytes": self.ruta.stat().st_size if self.ruta.exists() else 0,
         }
+
+    def _convertir_a_h264(self) -> None:
+        """
+        Reescribe el video en H.264 con el ffmpeg de imageio-ffmpeg.
+
+        Los navegadores solo reproducen H.264 dentro de MP4; mp4v (MPEG-4
+        Part 2) produce un archivo que Chrome descarga pero no decodifica.
+
+        Falla en silencio a propósito: no poder convertir deja el video sin
+        reproducirse en el tablero, pero no debe tumbar un análisis que ya
+        terminó bien.
+        """
+        if not self.ruta.exists() or self.ruta.stat().st_size < 1024:
+            print("[aviso] El video anotado quedó vacío; no se convierte.")
+            return
+
+        try:
+            import subprocess
+
+            import imageio_ffmpeg
+        except ImportError:
+            print(
+                "[aviso] Instala imageio-ffmpeg (pip install imageio-ffmpeg) "
+                "para que el video se reproduzca en el tablero."
+            )
+            return
+
+        temporal = self.ruta.with_name(self.ruta.stem + "_h264.mp4")
+        try:
+            resultado = subprocess.run(
+                [
+                    imageio_ffmpeg.get_ffmpeg_exe(), "-y", "-loglevel", "error",
+                    "-i", str(self.ruta),
+                    "-vcodec", "libx264",
+                    "-pix_fmt", "yuv420p",  # sin esto, algunos navegadores tampoco lo leen
+                    str(temporal),
+                ],
+                capture_output=True,
+                timeout=600,  # un ffmpeg colgado no debe bloquear la API
+            )
+            if (
+                resultado.returncode == 0
+                and temporal.exists()
+                and temporal.stat().st_size > 1024
+            ):
+                temporal.replace(self.ruta)
+                self.codec = "h264"
+                print("[video] Convertido a H.264 para reproducción en navegador.")
+            else:
+                print("[aviso] ffmpeg no pudo convertir el video; se deja el original.")
+                temporal.unlink(missing_ok=True)
+        except Exception as exc:
+            print(f"[aviso] No se pudo convertir el video a H.264: {exc}")
+            temporal.unlink(missing_ok=True)
 
     # ── Dibujo ───────────────────────────────────────────────────────────
 
