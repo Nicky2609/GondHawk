@@ -27,7 +27,7 @@ export function FunnelPanel({ total, zonas, zonaSeleccionada, onSeleccionar }) {
   const base = datos.visitas || 1;
 
   return (
-    <section className="panel">
+    <section className="panel" data-tour="interactions">
       <div className="panel-head">
         <h3>Embudo físico de compra</h3>
         <select

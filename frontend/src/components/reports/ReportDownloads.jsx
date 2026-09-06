@@ -46,7 +46,7 @@ export function ReportDownloads({ analisisId }) {
   };
 
   return (
-    <div className="rounded-2xl border border-[var(--panel-border)] bg-[var(--panel)] p-4">
+    <div className="rounded-2xl border border-[var(--panel-border)] bg-[var(--panel)] p-4" data-tour="reports">
       <p className="text-xs text-[var(--ink-muted)]">Descargar análisis</p>
       <div className="mt-3 flex flex-wrap gap-2">
         {FORMATOS.map((f) => (
