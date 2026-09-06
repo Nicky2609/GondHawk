@@ -13,11 +13,26 @@ Cumplimiento de privacidad (Ley 1581 de 2012):
   - Este modulo nunca recorta, guarda ni procesa la region facial.
   - No se hace ningun tipo de reconocimiento facial ni biometrico.
   - Solo se conserva: bounding box, confianza y clase ("person").
+
+Sobre el umbral de confianza
+----------------------------
+El umbral por defecto baja de 0.40 a 0.25 tras medirlo sobre escenas
+sinteticas 3D: con 0.40 el detector encontraba 1703 personas donde habia unas
+6000, y las detecciones intermitentes fragmentaban los tracks hasta el punto
+de que nadie alcanzaba el umbral de permanencia. YOLO SI ve las figuras, pero
+con confianza baja porque fue entrenado sobre fotografias y las figuras
+renderizadas no tienen textura ni detalle fotografico.
+
+El compromiso es explicito: un umbral bajo agrega falsos positivos, pero en
+este pipeline la etapa de tracking descarta lo que no persiste entre frames,
+mientras que una deteccion perdida no la recupera nadie. Para video real
+grabado en tienda, 0.35-0.45 sigue siendo lo adecuado; el perfil "sintetico"
+existe para no tener que recordar esto cada vez.
 """
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import List, Optional
 
 import numpy as np
@@ -26,6 +41,24 @@ from ultralytics import YOLO
 # En el dataset COCO (con el que viene entrenado YOLO por defecto),
 # la clase 0 es "person". Filtramos solo esa clase.
 PERSON_CLASS_ID = 0
+
+# Perfiles de deteccion segun el origen del video.
+PERFILES = {
+    # Video grabado en tienda: la textura y la iluminacion reales dan
+    # confianzas altas, asi que se puede exigir mas y evitar falsos positivos.
+    "real": {"conf": 0.40, "iou": 0.50, "imgsz": 640},
+    # Escena sintetica renderizada: ahora con un modelo entrenado específicamente
+    # sobre figuras 3D, podemos subir la confianza y mejorar la precisión.
+    "sintetico": {
+    "conf": 0.35,
+    "iou": 0.45,
+    "imgsz": 960,
+    "model": "C:/Users/USUARIO/GondHawk/runs/detect/train/weights/last.pt",
+},
+    # Para diagnosticar: acepta casi todo. Sirve para saber si el detector
+    # "ve" algo o no ve nada, no para producir metricas.
+    "permisivo": {"conf": 0.10, "iou": 0.45, "imgsz": 960},
+}
 
 
 @dataclass
@@ -50,22 +83,59 @@ class PersonDetector:
     def __init__(
         self,
         model_path: str = "yolov8n.pt",
-        conf_threshold: float = 0.4,
-        iou_threshold: float = 0.5,
+        conf_threshold: float = 0.25,
+        iou_threshold: float = 0.45,
         device: Optional[str] = None,
+        imgsz: int = 640,
+        perfil: Optional[str] = None,
+        min_area: float = 0.0,
     ):
         """
         Args:
             model_path: pesos de YOLO. "yolov8n.pt" se descarga automaticamente
                 la primera vez (modelo liviano, bueno para prototipo/CPU).
+                "yolov8s.pt" detecta bastante mejor a costa de ~2.5x tiempo:
+                vale la pena si el equipo aguanta.
             conf_threshold: confianza minima para aceptar una deteccion.
             iou_threshold: umbral de IoU para el Non-Max Suppression interno.
             device: "cpu", "cuda", "cuda:0", etc. None deja que Ultralytics elija.
+            imgsz: resolucion de inferencia. Subirla ayuda con personas
+                pequenas al fondo, que es justo donde se pierden las visitas a
+                las gondolas del fondo del pasillo.
+            perfil: "real", "sintetico" o "permisivo". Si se indica, sobrescribe
+                conf, iou e imgsz con los valores del perfil. Si el perfil
+                define una clave "model", se usa ese modelo en lugar del
+                model_path proporcionado.
+            min_area: area minima del bbox en pixeles cuadrados. Descarta
+                detecciones diminutas que casi siempre son ruido y que el
+                tracker no consigue seguir.
         """
+        # Aplicar perfil si se especifica
+        if perfil is not None:
+            if perfil not in PERFILES:
+                raise ValueError(
+                    f"Perfil desconocido: {perfil}. Opciones: {list(PERFILES)}"
+                )
+            ajustes = PERFILES[perfil]
+            conf_threshold = ajustes["conf"]
+            iou_threshold = ajustes["iou"]
+            imgsz = ajustes["imgsz"]
+            # Si el perfil tiene un modelo específico, actualiza model_path
+            if "model" in ajustes:
+                model_path = ajustes["model"]
+
         self.model = YOLO(model_path)
         self.conf_threshold = conf_threshold
         self.iou_threshold = iou_threshold
         self.device = device
+        self.imgsz = imgsz
+        self.perfil = perfil
+        self.min_area = min_area
+
+        # Contadores para diagnostico: si las detecciones caen, lo primero que
+        # hay que saber es si el detector no ve nada o si se estan filtrando.
+        self.total_detectadas = 0
+        self.total_descartadas_por_area = 0
 
     def detect_frame(self, frame: np.ndarray) -> List[Detection]:
         """Detecta personas en un solo frame (numpy array BGR, como los da OpenCV).
@@ -78,6 +148,7 @@ class PersonDetector:
             classes=[PERSON_CLASS_ID],
             conf=self.conf_threshold,
             iou=self.iou_threshold,
+            imgsz=self.imgsz,
             device=self.device,
             verbose=False,
         )[0]
@@ -89,6 +160,27 @@ class PersonDetector:
         for box in results.boxes:
             xyxy = box.xyxy[0].tolist()
             conf = float(box.conf[0])
+
+            if self.min_area > 0:
+                ancho = xyxy[2] - xyxy[0]
+                alto = xyxy[3] - xyxy[1]
+                if ancho * alto < self.min_area:
+                    self.total_descartadas_por_area += 1
+                    continue
+
             detections.append(Detection(bbox=xyxy, confidence=conf))
 
+        self.total_detectadas += len(detections)
         return detections
+
+    def resumen(self) -> dict:
+        """Estadisticas de la corrida, utiles para comparar configuraciones."""
+        return {
+            "modelo": getattr(self.model, "model_name", "yolov8"),
+            "perfil": self.perfil,
+            "conf_threshold": self.conf_threshold,
+            "iou_threshold": self.iou_threshold,
+            "imgsz": self.imgsz,
+            "total_detectadas": self.total_detectadas,
+            "descartadas_por_area": self.total_descartadas_por_area,
+        }

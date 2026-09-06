@@ -267,10 +267,7 @@ class GondolaPipeline:
 
         # ── Módulo 2: Detector de personas ──────────────────────────────────
         print("[pipeline] Iniciando módulo 2 — Detección de personas (Samuel)...")
-        self.detector = PersonDetector(
-            model_path=model_path,
-            conf_threshold=conf_threshold,
-        )
+        self.detector = PersonDetector(perfil="sintetico")
 
         # ── Módulo 3: Tracker ────────────────────────────────────────────────
         print("[pipeline] Iniciando módulo 3 — Tracking (Juan)...")

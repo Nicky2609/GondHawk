@@ -1,0 +1,86 @@
+{
+  "total": {
+    "visitas": 41,
+    "se_detiene": 40,
+    "toma_producto": 8,
+    "devuelve": 3,
+    "se_lo_lleva": 5,
+    "tasa_interaccion": 0.2,
+    "tasa_rechazo": 0.375
+  },
+  "zonas": [
+    {
+      "zone_id": "gondola_A1",
+      "personas_unicas": 14,
+      "embudo": {
+        "visitas": 14,
+        "pasa_de_largo": 0,
+        "se_detiene": 14,
+        "toma_producto": 1,
+        "devuelve": 0,
+        "se_lo_lleva": 1
+      },
+      "tasa_detencion": 1.0,
+      "tasa_interaccion": 0.0714,
+      "tasa_rechazo": 0.0,
+      "tasa_conversion": 1.0,
+      "dwell_promedio_s": 3.2,
+      "temperatura": "fria"
+    },
+    {
+      "zone_id": "gondola_A2",
+      "personas_unicas": 14,
+      "embudo": {
+        "visitas": 14,
+        "pasa_de_largo": 0,
+        "se_detiene": 14,
+        "toma_producto": 6,
+        "devuelve": 2,
+        "se_lo_lleva": 4
+      },
+      "tasa_detencion": 1.0,
+      "tasa_interaccion": 0.4286,
+      "tasa_rechazo": 0.3333,
+      "tasa_conversion": 0.6667,
+      "dwell_promedio_s": 5.62,
+      "temperatura": "templada"
+    },
+    {
+      "zone_id": "gondola_A3",
+      "personas_unicas": 13,
+      "embudo": {
+        "visitas": 13,
+        "pasa_de_largo": 1,
+        "se_detiene": 12,
+        "toma_producto": 1,
+        "devuelve": 1,
+        "se_lo_lleva": 0
+      },
+      "tasa_detencion": 0.9231,
+      "tasa_interaccion": 0.0833,
+      "tasa_rechazo": 1.0,
+      "tasa_conversion": 0.0,
+      "dwell_promedio_s": 2.43,
+      "temperatura": "fria"
+    }
+  ],
+  "alertas": [
+    {
+      "zone_id": "gondola_A1",
+      "tipo": "zona_fria",
+      "mensaje": "14 visitas y solo 1 interacciones: hay trafico pero el producto no engancha."
+    },
+    {
+      "zone_id": "gondola_A3",
+      "tipo": "zona_fria",
+      "mensaje": "13 visitas y solo 1 interacciones: hay trafico pero el producto no engancha."
+    }
+  ],
+  "meta": {
+    "video_ref": "escena_sintetica",
+    "frames_procesados": 1350,
+    "t0": "2026-08-20T09:00:00",
+    "min_dwell_s": 2.0,
+    "modo_alcance": "geometrico"
+  }
+}

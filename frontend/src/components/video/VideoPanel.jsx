@@ -11,7 +11,6 @@ import { useState } from 'react';
  */
 export function VideoPanel({ videoUrl, zonasUrl, embebido = false }) {
   const [vista, setVista] = useState('video');
-  const [errorVideo, setErrorVideo] = useState(false);
 
   if (!videoUrl && !zonasUrl) {
     return (
@@ -44,27 +43,10 @@ export function VideoPanel({ videoUrl, zonasUrl, embebido = false }) {
         </div>
       </div>
 
-      {vista === 'video' ? (
-        videoUrl && !errorVideo ? (
-          <video
-            src={videoUrl}
-            controls
-            className="w-full bg-black"
-            preload="metadata"
-            onError={() => setErrorVideo(true)}
-          >
-            Tu navegador no puede reproducir este video.
-          </video>
-        ) : (
-          // Sin este caso el panel quedaba en blanco: la URL existía, así que
-          // no entraba en el estado vacío, pero el video no cargaba y no había
-          // ningún mensaje que lo explicara.
-          <div className="p-6 text-sm text-[var(--ink-muted)]">
-            {videoUrl
-              ? 'No se pudo cargar el video de este análisis. Si es un análisis antiguo, puede que no se haya archivado; vuelve a subir el video.'
-              : 'Este análisis no tiene video guardado.'}
-          </div>
-        )
+      {vista === 'video' && videoUrl ? (
+        <video src={videoUrl} controls className="w-full bg-black" preload="metadata">
+          Tu navegador no puede reproducir este video.
+        </video>
       ) : null}
 
       {vista === 'zonas' && zonasUrl ? (

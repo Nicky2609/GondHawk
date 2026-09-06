@@ -1,0 +1,140 @@
+{
+  "total": {
+    "visitas": 24,
+    "se_detiene": 3,
+    "toma_producto": 0,
+    "devuelve": 0,
+    "se_lo_lleva": 0,
+    "tasa_interaccion": 0.0,
+    "tasa_rechazo": 0.0
+  },
+  "zonas": [
+    {
+      "zone_id": "gondola_A1",
+      "personas_unicas": 6,
+      "embudo": {
+        "visitas": 10,
+        "pasa_de_largo": 9,
+        "se_detiene": 1,
+        "toma_producto": 0,
+        "devuelve": 0,
+        "se_lo_lleva": 0
+      },
+      "tasa_detencion": 0.1,
+      "tasa_interaccion": 0.0,
+      "tasa_rechazo": 0.0,
+      "tasa_conversion": 0.0,
+      "dwell_promedio_s": 2.0,
+      "temperatura": "fria"
+    },
+    {
+      "zone_id": "gondola_A2",
+      "personas_unicas": 4,
+      "embudo": {
+        "visitas": 4,
+        "pasa_de_largo": 3,
+        "se_detiene": 1,
+        "toma_producto": 0,
+        "devuelve": 0,
+        "se_lo_lleva": 0
+      },
+      "tasa_detencion": 0.25,
+      "tasa_interaccion": 0.0,
+      "tasa_rechazo": 0.0,
+      "tasa_conversion": 0.0,
+      "dwell_promedio_s": 2.0,
+      "temperatura": "fria"
+    },
+    {
+      "zone_id": "gondola_A3",
+      "personas_unicas": 6,
+      "embudo": {
+        "visitas": 10,
+        "pasa_de_largo": 9,
+        "se_detiene": 1,
+        "toma_producto": 0,
+        "devuelve": 0,
+        "se_lo_lleva": 0
+      },
+      "tasa_detencion": 0.1,
+      "tasa_interaccion": 0.0,
+      "tasa_rechazo": 0.0,
+      "tasa_conversion": 0.0,
+      "dwell_promedio_s": 2.0,
+      "temperatura": "fria"
+    }
+  ],
+  "alertas": [
+    {
+      "zone_id": "gondola_A1",
+      "tipo": "zona_fria",
+      "mensaje": "10 visitas y solo 0 interacciones: hay trafico pero el producto no engancha."
+    },
+    {
+      "zone_id": "gondola_A1",
+      "tipo": "trafico_sin_parada",
+      "mensaje": "La gente pasa pero no se detiene: candidata a cambio de planograma o material visual."
+    },
+    {
+      "zone_id": "gondola_A2",
+      "tipo": "zona_fria",
+      "mensaje": "4 visitas y solo 0 interacciones: hay trafico pero el producto no engancha."
+    },
+    {
+      "zone_id": "gondola_A3",
+      "tipo": "zona_fria",
+      "mensaje": "10 visitas y solo 0 interacciones: hay trafico pero el producto no engancha."
+    },
+    {
+      "zone_id": "gondola_A3",
+      "tipo": "trafico_sin_parada",
+      "mensaje": "La gente pasa pero no se detiene: candidata a cambio de planograma o material visual."
+    }
+  ],
+  "recomendaciones": [
+    {
+      "zone_id": "gondola_A1",
+      "patron": "trafico_sin_parada",
+      "titulo": "Pasa mucha gente, casi nadie se detiene",
+      "prioridad": "alta",
+      "evidencia": {
+        "visitas": 10,
+        "paradas": 1,
+        "tasa_detencion": 0.1
+      },
+      "detalle": "10 personas pasan y solo 1 se detienen (10%). El tráfico está, la atención no.",
+      "accion": "Es una góndola de paso, no de compra. Señalización a la altura de los ojos o un quiebre visual en el lineal para romper la marcha."
+    },
+    {
+      "zone_id": "gondola_A3",
+      "patron": "trafico_sin_parada",
+      "titulo": "Pasa mucha gente, casi nadie se detiene",
+      "prioridad": "alta",
+      "evidencia": {
+        "visitas": 10,
+        "paradas": 1,
+        "tasa_detencion": 0.1
+      },
+      "detalle": "10 personas pasan y solo 1 se detienen (10%). El tráfico está, la atención no.",
+      "accion": "Es una góndola de paso, no de compra. Señalización a la altura de los ojos o un quiebre visual en el lineal para romper la marcha."
+    },
+    {
+      "zone_id": "gondola_A2",
+      "patron": "muestra_insuficiente",
+      "titulo": "Datos insuficientes",
+      "prioridad": "informativa",
+      "evidencia": {
+        "visitas": 4
+      },
+      "detalle": "Solo 4 visitas registradas: no alcanza para sacar conclusiones sobre esta zona.",
+      "accion": "Ampliar la ventana de grabación antes de decidir sobre esta góndola."
+    }
+  ],
+  "recomendaciones_fuente": "reglas",
+  "meta": {
+    "video_ref": "pipeline/uploads/t3d_v3.mp4",
+    "frames_procesados": 1350,
+    "t0": "2026-08-20T09:00:00",
+    "min_dwell_s": 2.0
+  }
+}

@@ -1,92 +1,56 @@
 {
   "total": {
-    "visitas": 69,
-    "se_detiene": 3,
-    "toma_producto": 0,
-    "devuelve": 0,
-    "se_lo_lleva": 0,
-    "tasa_interaccion": 0.0,
-    "tasa_rechazo": 0.0
+    "visitas": 12,
+    "se_detiene": 9,
+    "toma_producto": 6,
+    "devuelve": 4,
+    "se_lo_lleva": 2,
+    "tasa_interaccion": 0.6667,
+    "tasa_rechazo": 0.6667
   },
   "zonas": [
     {
-      "zone_id": "gondola_auto_1",
-      "personas_unicas": 6,
-      "embudo": {
-        "visitas": 8,
-        "pasa_de_largo": 8,
-        "se_detiene": 0,
-        "toma_producto": 0,
-        "devuelve": 0,
-        "se_lo_lleva": 0
-      },
-      "tasa_detencion": 0.0,
-      "tasa_interaccion": 0.0,
-      "tasa_rechazo": 0.0,
-      "tasa_conversion": 0.0,
-      "dwell_promedio_s": 0.0,
-      "temperatura": "fria"
-    },
-    {
-      "zone_id": "gondola_auto_2",
-      "personas_unicas": 17,
-      "embudo": {
-        "visitas": 22,
-        "pasa_de_largo": 22,
-        "se_detiene": 0,
-        "toma_producto": 0,
-        "devuelve": 0,
-        "se_lo_lleva": 0
-      },
-      "tasa_detencion": 0.0,
-      "tasa_interaccion": 0.0,
-      "tasa_rechazo": 0.0,
-      "tasa_conversion": 0.0,
-      "dwell_promedio_s": 0.0,
-      "temperatura": "fria"
-    },
-    {
-      "zone_id": "gondola_auto_3",
-      "personas_unicas": 13,
-      "embudo": {
-        "visitas": 16,
-        "pasa_de_largo": 14,
-        "se_detiene": 2,
-        "toma_producto": 0,
-        "devuelve": 0,
-        "se_lo_lleva": 0
-      },
-      "tasa_detencion": 0.125,
-      "tasa_interaccion": 0.0,
-      "tasa_rechazo": 0.0,
-      "tasa_conversion": 0.0,
-      "dwell_promedio_s": 2.0,
-      "temperatura": "fria"
-    },
-    {
-      "zone_id": "gondola_auto_4",
-      "personas_unicas": 16,
-      "embudo": {
-        "visitas": 19,
-        "pasa_de_largo": 18,
-        "se_detiene": 1,
-        "toma_producto": 0,
-        "devuelve": 0,
-        "se_lo_lleva": 0
-      },
-      "tasa_detencion": 0.0526,
-      "tasa_interaccion": 0.0,
-      "tasa_rechazo": 0.0,
-      "tasa_conversion": 0.0,
-      "dwell_promedio_s": 2.0,
-      "temperatura": "fria"
-    },
-    {
-      "zone_id": "gondola_auto_5",
+      "zone_id": "gondola_A1",
       "personas_unicas": 4,
       "embudo": {
-        "visitas": 4,
-        "pasa_de_largo": 4,
+        "visitas": 6,
+        "pasa_de_largo": 2,
+        "se_detiene": 4,
+        "toma_producto": 1,
+        "devuelve": 0,
+        "se_lo_lleva": 1
+      },
+      "tasa_detencion": 0.6667,
+      "tasa_interaccion": 0.25,
+      "tasa_rechazo": 0.0,
+      "tasa_conversion": 1.0,
+      "dwell_promedio_s": 2.08,
+      "temperatura": "templada"
+    },
+    {
+      "zone_id": "gondola_A2",
+      "personas_unicas": 4,
+      "embudo": {
+        "visitas": 6,
+        "pasa_de_largo": 1,
+        "se_detiene": 5,
+        "toma_producto": 5,
+        "devuelve": 4,
+        "se_lo_lleva": 1
+      },
+      "tasa_detencion": 0.8333,
+      "tasa_interaccion": 1.0,
+      "tasa_rechazo": 0.8,
+      "tasa_conversion": 0.2,
+      "dwell_promedio_s": 4.39,
+      "temperatura": "caliente"
+    },
+    {
+      "zone_id": "gondola_A3",
+      "personas_unicas": 0,
+      "embudo": {
+        "visitas": 0,
+        "pasa_de_largo": 0,
         "se_detiene": 0,
         "toma_producto": 0,
         "devuelve": 0,
@@ -97,117 +61,46 @@
       "tasa_rechazo": 0.0,
       "tasa_conversion": 0.0,
       "dwell_promedio_s": 0.0,
-      "temperatura": "fria"
+      "temperatura": "sin_datos"
     }
   ],
   "alertas": [
     {
-      "zone_id": "gondola_auto_1",
-      "tipo": "zona_fria",
-      "mensaje": "8 visitas y solo 0 interacciones: hay trafico pero el producto no engancha."
-    },
-    {
-      "zone_id": "gondola_auto_1",
-      "tipo": "trafico_sin_parada",
-      "mensaje": "La gente pasa pero no se detiene: candidata a cambio de planograma o material visual."
-    },
-    {
-      "zone_id": "gondola_auto_2",
-      "tipo": "zona_fria",
-      "mensaje": "22 visitas y solo 0 interacciones: hay trafico pero el producto no engancha."
-    },
-    {
-      "zone_id": "gondola_auto_2",
-      "tipo": "trafico_sin_parada",
-      "mensaje": "La gente pasa pero no se detiene: candidata a cambio de planograma o material visual."
-    },
-    {
-      "zone_id": "gondola_auto_3",
-      "tipo": "zona_fria",
-      "mensaje": "16 visitas y solo 0 interacciones: hay trafico pero el producto no engancha."
-    },
-    {
-      "zone_id": "gondola_auto_3",
-      "tipo": "trafico_sin_parada",
-      "mensaje": "La gente pasa pero no se detiene: candidata a cambio de planograma o material visual."
-    },
-    {
-      "zone_id": "gondola_auto_4",
-      "tipo": "zona_fria",
-      "mensaje": "19 visitas y solo 0 interacciones: hay trafico pero el producto no engancha."
-    },
-    {
-      "zone_id": "gondola_auto_4",
-      "tipo": "trafico_sin_parada",
-      "mensaje": "La gente pasa pero no se detiene: candidata a cambio de planograma o material visual."
-    },
-    {
-      "zone_id": "gondola_auto_5",
-      "tipo": "zona_fria",
-      "mensaje": "4 visitas y solo 0 interacciones: hay trafico pero el producto no engancha."
-    },
-    {
-      "zone_id": "gondola_auto_5",
-      "tipo": "trafico_sin_parada",
-      "mensaje": "La gente pasa pero no se detiene: candidata a cambio de planograma o material visual."
+      "zone_id": "gondola_A2",
+      "tipo": "rechazo_alto",
+      "mensaje": "4 de 5 productos tomados vuelven al estante: revisar precio, facing o informacion visible."
     }
   ],
   "recomendaciones": [
     {
-      "zone_id": "gondola_auto_2",
-      "patron": "trafico_sin_parada",
-      "titulo": "Pasa mucha gente, casi nadie se detiene",
+      "zone_id": "gondola_A2",
+      "patron": "rechazo_alto",
+      "titulo": "El producto se toma pero se devuelve",
       "prioridad": "alta",
       "evidencia": {
-        "visitas": 22,
-        "paradas": 0,
-        "tasa_detencion": 0.0
+        "tomas": 5,
+        "devoluciones": 4,
+        "tasa_rechazo": 0.8
       },
-      "detalle": "22 personas pasan y solo 0 se detienen (0%). El tráfico está, la atención no.",
-      "accion": "Es una góndola de paso, no de compra. Señalización a la altura de los ojos o un quiebre visual en el lineal para romper la marcha."
+      "detalle": "De 5 productos tomados, 4 vuelven al estante (80%). El producto atrae, pero algo lo frena en la mano del comprador.",
+      "accion": "Revisar precio visible, información de empaque y fecha de vencimiento. Es el patrón típico de sorpresa de precio en el punto de decisión."
     },
     {
-      "zone_id": "gondola_auto_3",
-      "patron": "trafico_sin_parada",
-      "titulo": "Pasa mucha gente, casi nadie se detiene",
-      "prioridad": "alta",
-      "evidencia": {
-        "visitas": 16,
-        "paradas": 2,
-        "tasa_detencion": 0.125
-      },
-      "detalle": "16 personas pasan y solo 2 se detienen (12%). El tráfico está, la atención no.",
-      "accion": "Es una góndola de paso, no de compra. Señalización a la altura de los ojos o un quiebre visual en el lineal para romper la marcha."
-    },
-    {
-      "zone_id": "gondola_auto_4",
-      "patron": "trafico_sin_parada",
-      "titulo": "Pasa mucha gente, casi nadie se detiene",
-      "prioridad": "alta",
-      "evidencia": {
-        "visitas": 19,
-        "paradas": 1,
-        "tasa_detencion": 0.05263157894736842
-      },
-      "detalle": "19 personas pasan y solo 1 se detienen (5%). El tráfico está, la atención no.",
-      "accion": "Es una góndola de paso, no de compra. Señalización a la altura de los ojos o un quiebre visual en el lineal para romper la marcha."
-    },
-    {
-      "zone_id": "gondola_auto_5",
+      "zone_id": "gondola_A3",
       "patron": "muestra_insuficiente",
       "titulo": "Datos insuficientes",
       "prioridad": "informativa",
       "evidencia": {
-        "visitas": 4
+        "visitas": 0
       },
-      "detalle": "Solo 4 visitas registradas: no alcanza para sacar conclusiones sobre esta zona.",
+      "detalle": "Solo 0 visitas registradas: no alcanza para sacar conclusiones sobre esta zona.",
       "accion": "Ampliar la ventana de grabación antes de decidir sobre esta góndola."
     }
   ],
   "recomendaciones_fuente": "reglas",
   "meta": {
-    "video_ref": "C:\\Users\\USUARIO\\GondHawk\\backend\\pipeline\\uploads\\videoplayback.mp4",
-    "frames_procesados": 3753,
+    "video_ref": "C:\\Users\\USUARIO\\GondHawk\\backend\\pipeline\\uploads\\escena3d_d60_p12_s7.mp4",
+    "frames_procesados": 900,
     "t0": "2026-08-20T09:00:00",
     "min_dwell_s": 2.0
   }

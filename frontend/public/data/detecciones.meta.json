@@ -1,10 +1,10 @@
 {
-  "video_source": "C:\\Users\\USUARIO\\GondHawk\\backend\\pipeline\\uploads\\videoplayback.mp4",
-  "fps_origen": 24.0,
-  "frame_width": 640,
-  "frame_height": 360,
-  "frame_count": 3753,
-  "frames_procesados": 3753,
-  "total_detecciones": 7666,
-  "tiempo_procesamiento_seg": 193.4
+  "video_source": "C:\\Users\\USUARIO\\GondHawk\\backend\\pipeline\\uploads\\escena3d_d60_p12_s7.mp4",
+  "fps_origen": 15.0,
+  "frame_width": 960,
+  "frame_height": 540,
+  "frame_count": 900,
+  "frames_procesados": 900,
+  "total_detecciones": 2364,
+  "tiempo_procesamiento_seg": 77.32
 }

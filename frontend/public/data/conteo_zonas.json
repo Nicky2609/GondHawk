@@ -1,48 +1,30 @@
 {
-  "video_ref": "propuesta_automatica",
-  "frames_procesados": 1767,
+  "video_ref": "escena3d",
+  "frames_procesados": 801,
   "zonas": [
     {
-      "zone_id": "gondola_auto_1",
-      "visitas_unicas": 6,
-      "frames_ocupada": 106,
-      "pct_tiempo_ocupada": 6.0
-    },
-    {
-      "zone_id": "gondola_auto_2",
-      "visitas_unicas": 18,
-      "frames_ocupada": 230,
-      "pct_tiempo_ocupada": 13.02
-    },
-    {
-      "zone_id": "gondola_auto_3",
-      "visitas_unicas": 13,
-      "frames_ocupada": 211,
-      "pct_tiempo_ocupada": 11.94
-    },
-    {
-      "zone_id": "gondola_auto_4",
-      "visitas_unicas": 16,
-      "frames_ocupada": 268,
-      "pct_tiempo_ocupada": 15.17
-    },
-    {
-      "zone_id": "gondola_auto_5",
+      "zone_id": "gondola_A1",
       "visitas_unicas": 4,
-      "frames_ocupada": 13,
-      "pct_tiempo_ocupada": 0.74
+      "frames_ocupada": 392,
+      "pct_tiempo_ocupada": 48.94
     },
     {
-      "zone_id": "caja_1",
+      "zone_id": "gondola_A2",
+      "visitas_unicas": 4,
+      "frames_ocupada": 505,
+      "pct_tiempo_ocupada": 63.05
+    },
+    {
+      "zone_id": "gondola_A3",
+      "visitas_unicas": 0,
+      "frames_ocupada": 0,
+      "pct_tiempo_ocupada": 0.0
+    },
+    {
+      "zone_id": "pasillo_central",
       "visitas_unicas": 16,
-      "frames_ocupada": 206,
-      "pct_tiempo_ocupada": 11.66
-    },
-    {
-      "zone_id": "pasillo_1",
-      "visitas_unicas": 84,
-      "frames_ocupada": 1088,
-      "pct_tiempo_ocupada": 61.57
+      "frames_ocupada": 658,
+      "pct_tiempo_ocupada": 82.15
     }
   ]
 }

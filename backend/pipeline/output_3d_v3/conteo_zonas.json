@@ -1,0 +1,30 @@
+{
+  "video_ref": "escena3d",
+  "frames_procesados": 1168,
+  "zonas": [
+    {
+      "zone_id": "gondola_A1",
+      "visitas_unicas": 3,
+      "frames_ocupada": 418,
+      "pct_tiempo_ocupada": 35.79
+    },
+    {
+      "zone_id": "gondola_A2",
+      "visitas_unicas": 2,
+      "frames_ocupada": 238,
+      "pct_tiempo_ocupada": 20.38
+    },
+    {
+      "zone_id": "gondola_A3",
+      "visitas_unicas": 3,
+      "frames_ocupada": 347,
+      "pct_tiempo_ocupada": 29.71
+    },
+    {
+      "zone_id": "pasillo_central",
+      "visitas_unicas": 13,
+      "frames_ocupada": 967,
+      "pct_tiempo_ocupada": 82.79
+    }
+  ]
+}

@@ -1,0 +1,123 @@
+{
+  "total": {
+    "visitas": 12,
+    "se_detiene": 10,
+    "toma_producto": 0,
+    "devuelve": 0,
+    "se_lo_lleva": 0,
+    "tasa_interaccion": 0.0,
+    "tasa_rechazo": 0.0
+  },
+  "zonas": [
+    {
+      "zone_id": "gondola_A1",
+      "personas_unicas": 3,
+      "embudo": {
+        "visitas": 7,
+        "pasa_de_largo": 2,
+        "se_detiene": 5,
+        "toma_producto": 0,
+        "devuelve": 0,
+        "se_lo_lleva": 0
+      },
+      "tasa_detencion": 0.7143,
+      "tasa_interaccion": 0.0,
+      "tasa_rechazo": 0.0,
+      "tasa_conversion": 0.0,
+      "dwell_promedio_s": 1.0,
+      "temperatura": "fria"
+    },
+    {
+      "zone_id": "gondola_A2",
+      "personas_unicas": 2,
+      "embudo": {
+        "visitas": 2,
+        "pasa_de_largo": 0,
+        "se_detiene": 2,
+        "toma_producto": 0,
+        "devuelve": 0,
+        "se_lo_lleva": 0
+      },
+      "tasa_detencion": 1.0,
+      "tasa_interaccion": 0.0,
+      "tasa_rechazo": 0.0,
+      "tasa_conversion": 0.0,
+      "dwell_promedio_s": 1.0,
+      "temperatura": "fria"
+    },
+    {
+      "zone_id": "gondola_A3",
+      "personas_unicas": 3,
+      "embudo": {
+        "visitas": 3,
+        "pasa_de_largo": 0,
+        "se_detiene": 3,
+        "toma_producto": 0,
+        "devuelve": 0,
+        "se_lo_lleva": 0
+      },
+      "tasa_detencion": 1.0,
+      "tasa_interaccion": 0.0,
+      "tasa_rechazo": 0.0,
+      "tasa_conversion": 0.0,
+      "dwell_promedio_s": 1.0,
+      "temperatura": "fria"
+    }
+  ],
+  "alertas": [
+    {
+      "zone_id": "gondola_A1",
+      "tipo": "zona_fria",
+      "mensaje": "7 visitas y solo 0 interacciones: hay trafico pero el producto no engancha."
+    },
+    {
+      "zone_id": "gondola_A3",
+      "tipo": "zona_fria",
+      "mensaje": "3 visitas y solo 0 interacciones: hay trafico pero el producto no engancha."
+    }
+  ],
+  "recomendaciones": [
+    {
+      "zone_id": "gondola_A1",
+      "patron": "mira_no_toca",
+      "titulo": "Se detienen pero no toman el producto",
+      "prioridad": "media",
+      "evidencia": {
+        "paradas": 5,
+        "tomas": 0,
+        "tasa_interaccion": 0.0
+      },
+      "detalle": "5 personas se detuvieron y solo 0 tomaron producto. Hay interés, pero no se convierte en contacto físico.",
+      "accion": "Revisar accesibilidad del facing (altura, profundidad) y claridad de precio. El comprador mira, evalúa y descarta sin tocar."
+    },
+    {
+      "zone_id": "gondola_A2",
+      "patron": "muestra_insuficiente",
+      "titulo": "Datos insuficientes",
+      "prioridad": "informativa",
+      "evidencia": {
+        "visitas": 2
+      },
+      "detalle": "Solo 2 visitas registradas: no alcanza para sacar conclusiones sobre esta zona.",
+      "accion": "Ampliar la ventana de grabación antes de decidir sobre esta góndola."
+    },
+    {
+      "zone_id": "gondola_A3",
+      "patron": "muestra_insuficiente",
+      "titulo": "Datos insuficientes",
+      "prioridad": "informativa",
+      "evidencia": {
+        "visitas": 3
+      },
+      "detalle": "Solo 3 visitas registradas: no alcanza para sacar conclusiones sobre esta zona.",
+      "accion": "Ampliar la ventana de grabación antes de decidir sobre esta góndola."
+    }
+  ],
+  "recomendaciones_fuente": "reglas",
+  "meta": {
+    "video_ref": "pipeline/uploads/t3d_v3.mp4",
+    "frames_procesados": 1350,
+    "t0": "2026-08-20T09:00:00",
+    "min_dwell_s": 1.0
+  }
+}

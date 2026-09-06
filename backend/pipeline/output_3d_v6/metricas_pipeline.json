@@ -1,0 +1,39 @@
+{
+  "pipeline": "GondHawk — Integrante 6 (Laura)",
+  "video_fuente": "pipeline/uploads/t3d_v3.mp4",
+  "frames_procesados": 1350,
+  "tiempo_procesamiento_seg": 85.1,
+  "total_detecciones": 2605,
+  "eventos_generados": 18,
+  "eventos_compliance": 16,
+  "embudo_global": {
+    "visitas": 12,
+    "se_detiene": 12,
+    "toma_producto": 3,
+    "devuelve": 1,
+    "tasa_interaccion": 0.25,
+    "tasa_rechazo": 0.3333
+  },
+  "alertas": [
+    {
+      "zone_id": "gondola_A1",
+      "tipo": "zona_fria",
+      "mensaje": "7 visitas y solo 1 interacciones: hay trafico pero el producto no engancha."
+    },
+    {
+      "zone_id": "gondola_A3",
+      "tipo": "rechazo_alto",
+      "mensaje": "1 de 2 productos tomados vuelven al estante: revisar precio, facing o informacion visible."
+    }
+  ],
+  "salidas": {
+    "detecciones": "pipeline\\output_3d_v6\\detecciones.jsonl",
+    "tracking": "pipeline\\output_3d_v6\\tracking.jsonl",
+    "dwell_time": "pipeline\\output_3d_v6\\dwell_time.jsonl",
+    "eventos_interaccion": "pipeline\\output_3d_v6\\eventos_interaccion.jsonl",
+    "eventos_compliance": "pipeline\\output_3d_v6\\eventos_compliance.jsonl",
+    "metricas_interaccion": "pipeline\\output_3d_v6\\metricas_interaccion.json",
+    "heatmap": "pipeline\\output_3d_v6\\heatmap.png",
+    "conteo_zonas": "pipeline\\output_3d_v6\\conteo_zonas.json"
+  }
+}
