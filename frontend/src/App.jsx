@@ -139,7 +139,7 @@ export default function App() {
             setRecomendaciones(reco.recomendaciones ?? []);
             setFuenteReco(reco.fuente ?? null);
           })
-          .catch(() => {});
+          .catch(() => { });
       }
       const realMessage = typeof payload?.message === 'string'
         ? payload.message
@@ -319,7 +319,7 @@ export default function App() {
           </div>
 
           {/* Mapa de tienda (vista cenital) */}
-          <section id="mapa-tienda" className="panel">
+          <section id="mapa-tienda" className="panel" data-tour="store-map">
             <div className="panel-head"><h3>Mapa de tienda (vista cenital)</h3></div>
             <StoreMapPanel
               zonasData={currentData.zonasPropuestas}
