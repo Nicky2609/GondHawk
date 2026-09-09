@@ -1,38 +1,41 @@
+import { Boxes, CircleHelp } from 'lucide-react';
+import logoGondHawk from '../../assets/gondhawk-logo.png';
+
 /**
  * Cabecera del tablero.
  *
- * El chip de "procesamiento local" no es decorativo: es el criterio de
- * viabilidad edge del reto, y conviene que esté visible en pantalla y no solo
- * en la presentación.
+ * Reemplaza la antigua barra lateral: la marca, el acceso a la Escena 3D y
+ * el recorrido guiado viven aquí.
  */
-export function Header({ frames, tiempo }) {
-  const fps = frames && tiempo ? Math.round(frames / tiempo) : null;
-
+export function Header({ vista, onToggleVista, onOpenTour }) {
   return (
-    <header className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-[var(--panel-border)] bg-[var(--panel)] px-5 py-4">
-      <div>
-        <h1 className="text-2xl">Góndola Inteligente</h1>
-        <p className="text-xs text-[var(--ink-muted)]">
-          Convierte video en decisiones de space management
-        </p>
-      </div>
+    <header className="topbar">
+      <div className="topbar-inner">
+        <div className="brand" data-tour="welcome">
+          <span className="brand-mark">
+            <img src={logoGondHawk} alt="GondHawk" />
+          </span>
+          <div>
+            <p className="brand-name">GondHawk</p>
+            <p className="brand-tagline">Convierte video en decisiones de space management</p>
+          </div>
+        </div>
 
-      <div className="flex flex-wrap items-center gap-3">
-        <span className="status-chip">
-          <span className="status-dot" />
-          <span>
-            Procesamiento local
-            <small>Sin conexión a la nube</small>
-          </span>
-        </span>
-        {fps !== null && (
-          <span className="status-chip">
-            <span>
-              {fps} fps
-              <small>{frames.toLocaleString('es-CO')} frames analizados</small>
-            </span>
-          </span>
-        )}
+        <div className="topbar-actions">
+          <button
+            type="button"
+            className={`ghost-button ${vista === 'sintetico' ? 'active' : ''}`}
+            onClick={onToggleVista}
+          >
+            <Boxes size={14} />
+            {vista === 'sintetico' ? 'Volver al tablero' : 'Escena 3D'}
+          </button>
+
+          <button type="button" className="ghost-button" onClick={onOpenTour} aria-label="Ver recorrido guiado">
+            <CircleHelp size={14} />
+            Ver tour
+          </button>
+        </div>
       </div>
     </header>
   );

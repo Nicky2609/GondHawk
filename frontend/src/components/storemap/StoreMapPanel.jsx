@@ -34,14 +34,20 @@ function polygonArea(polygon) {
   return Math.abs(area) / 2;
 }
 
-function computeProjection(zones, mapWidth, mapHeight, padding = 16) {
+// La proyeccion se calcula sobre el FRAME COMPLETO cuando el backend informa
+// su tamano. Ajustandola solo al recuadro de las zonas, cualquier persona que
+// camine fuera de una zona cae fuera del viewBox y desaparece del mapa, que es
+// justo lo contrario de lo que el mapa debe mostrar.
+function computeProjection(zones, mapWidth, mapHeight, frame = null, padding = 16) {
   const allPoints = zones.flatMap(z => z.poligono || []);
   if (allPoints.length === 0) return null;
 
-  const minX = Math.min(...allPoints.map(p => p[0]));
-  const maxX = Math.max(...allPoints.map(p => p[0]));
-  const minY = Math.min(...allPoints.map(p => p[1]));
-  const maxY = Math.max(...allPoints.map(p => p[1]));
+  const usarFrame = Number(frame?.width) > 0 && Number(frame?.height) > 0;
+
+  const minX = usarFrame ? 0 : Math.min(...allPoints.map(p => p[0]));
+  const maxX = usarFrame ? Number(frame.width) : Math.max(...allPoints.map(p => p[0]));
+  const minY = usarFrame ? 0 : Math.min(...allPoints.map(p => p[1]));
+  const maxY = usarFrame ? Number(frame.height) : Math.max(...allPoints.map(p => p[1]));
 
   const sourceWidth = maxX - minX || 1;
   const sourceHeight = maxY - minY || 1;
@@ -138,8 +144,12 @@ export function StoreMapPanel({ zonasData, conteoZonas, tracking, currentTimeSec
   useEffect(() => {
     const resizeObserver = new ResizeObserver(entries => {
       for (const entry of entries) {
-        const { width } = entry.contentRect;
-        setMapSize(prev => ({ width: Math.max(1, width - 32), height: 250 }));
+        const { width, height } = entry.contentRect;
+        // 34 px de cabecera + 16 px de padding vertical del contenedor.
+        setMapSize({
+          width: Math.max(1, width - 32),
+          height: Math.max(1, height - 50),
+        });
       }
     });
     if (containerRef.current) resizeObserver.observe(containerRef.current);
@@ -148,7 +158,11 @@ export function StoreMapPanel({ zonasData, conteoZonas, tracking, currentTimeSec
 
   const mergedZones = useMemo(() => {
     if (!zonasData?.zonas) return [];
-    const conteoMap = new Map((conteoZonas?.zonas || []).map(z => [z.zone_id, z]));
+    // El hook expone conteoZonas ya como arreglo; la respuesta cruda de la API
+    // lo trae como { zonas: [...] }. Aceptar las dos formas evita que el mapa
+    // se dibuje siempre con 0 visitas y opacidad minima.
+    const lista = Array.isArray(conteoZonas) ? conteoZonas : (conteoZonas?.zonas || []);
+    const conteoMap = new Map(lista.map(z => [z.zone_id, z]));
     return zonasData.zonas.map(zone => ({
       ...zone,
       ...conteoMap.get(zone.zone_id),
@@ -157,8 +171,11 @@ export function StoreMapPanel({ zonasData, conteoZonas, tracking, currentTimeSec
 
   const projection = useMemo(() => {
     if (!mergedZones.length) return null;
-    return computeProjection(mergedZones, mapSize.width, mapSize.height);
-  }, [mergedZones, mapSize]);
+    return computeProjection(mergedZones, mapSize.width, mapSize.height, {
+      width: zonasData?.frame_width,
+      height: zonasData?.frame_height,
+    });
+  }, [mergedZones, mapSize, zonasData]);
 
   const transformedZones = useMemo(() => {
     if (!mergedZones.length || !projection) return [];
@@ -192,7 +209,7 @@ export function StoreMapPanel({ zonasData, conteoZonas, tracking, currentTimeSec
   if (!hasData) {
     return (
       <div ref={containerRef} className="rounded-2xl border border-[var(--panel-border)] bg-[var(--panel)]" style={{ height: '250px' }}>
-        <div className="flex items-center justify-center h-full text-xs text-[var(--ink-muted)]">
+        <div className="flex items-center justify-center h-full text-sm text-[var(--ink-muted)]">
           Sin datos de zonas disponibles
         </div>
       </div>
@@ -204,8 +221,8 @@ export function StoreMapPanel({ zonasData, conteoZonas, tracking, currentTimeSec
   return (
     <div ref={containerRef} className="rounded-2xl border border-[var(--panel-border)] bg-[var(--panel)] relative" style={{ height: '250px' }}>
       <div className="flex items-center justify-between gap-2 border-b border-[var(--panel-border)] px-3 py-1.5">
-        <h3 className="text-xs font-medium">Mapa de tienda</h3>
-        <div className="flex items-center gap-1.5 text-[10px] text-[var(--ink-muted)]">
+        <h3 className="text-sm font-medium">Mapa de tienda</h3>
+        <div className="flex items-center gap-1.5 text-[12px] text-[var(--ink-muted)]">
           {hasTracking && (
             <span className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-[var(--background)]">
               <span className="w-1 h-1 rounded-full bg-emerald-500 animate-pulse" />
@@ -213,6 +230,7 @@ export function StoreMapPanel({ zonasData, conteoZonas, tracking, currentTimeSec
             </span>
           )}
           <span>{transformedZones.length} zonas</span>
+          <span>· {totalVisits} visitas</span>
         </div>
       </div>
 

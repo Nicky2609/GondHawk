@@ -7,6 +7,7 @@ import { PerformanceTable } from '../dashboard/PerformanceTable';
 
 const DURACIONES = [30, 60, 90, 120];
 const PERSONAS = [8, 12, 16, 20];
+const GONDOLAS = [2, 3, 4, 5, 6];
 
 function pct(v) {
   return typeof v === 'number' ? `${Math.round(v * 100)} %` : '—';
@@ -31,6 +32,7 @@ function mmss(segundos) {
 export function SyntheticPanel({ onAnalisis }) {
   const [duracion, setDuracion] = useState(60);
   const [personas, setPersonas] = useState(12);
+  const [gondolas, setGondolas] = useState(3);
   const [trabajo, setTrabajo] = useState(null);
   const [error, setError] = useState(null);
   const [transcurrido, setTranscurrido] = useState(0);
@@ -82,7 +84,7 @@ export function SyntheticPanel({ onAnalisis }) {
     setError(null);
     setTranscurrido(0);
     try {
-      const url = `${DATA_SOURCES.apiBase}/api/sintetico/generar?duracion=${duracion}&personas=${personas}&seed=7`;
+      const url = `${DATA_SOURCES.apiBase}/api/sintetico/generar?duracion=${duracion}&personas=${personas}&gondolas=${gondolas}&seed=7`;
       const res = await fetch(url, { method: 'POST' });
       const payload = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(payload.detail ?? 'No se pudo iniciar la generación.');
@@ -110,7 +112,7 @@ export function SyntheticPanel({ onAnalisis }) {
         </div>
 
         <div className="panel-body">
-          <p className="text-xs text-[var(--ink-muted)]">
+          <p className="text-sm text-[var(--ink-muted)]">
             Construye una tienda en 3D con compradores virtuales y la analiza con el
             mismo pipeline. Como el generador decide qué hace cada persona, se puede
             medir la exactitud del sistema: con video real eso exigiría anotar a mano
@@ -149,10 +151,26 @@ export function SyntheticPanel({ onAnalisis }) {
                 ))}
               </select>
             </label>
+
+            <label className="analysis-option">
+              <span>
+                Góndolas
+                <small>Cantidad de estanterías del mundo 3D.</small>
+              </span>
+              <select
+                value={gondolas}
+                onChange={(e) => setGondolas(Number(e.target.value))}
+                disabled={enCurso}
+              >
+                {GONDOLAS.map((g) => (
+                  <option key={g} value={g}>{g}</option>
+                ))}
+              </select>
+            </label>
           </div>
 
           {densidadAlta && (
-            <p className="mt-2 text-xs text-amber-400">
+            <p className="mt-2 text-sm text-amber-400">
               Densidad alta ({(duracion / personas).toFixed(1)} s por persona): las
               personas se solaparán frente al lineal y el detector fusionará sus cajas.
             </p>
@@ -169,7 +187,7 @@ export function SyntheticPanel({ onAnalisis }) {
 
           {trabajo && enCurso && (
             <div className="mt-4">
-              <div className="flex items-center justify-between text-xs text-[var(--ink-muted)]">
+              <div className="flex items-center justify-between text-sm text-[var(--ink-muted)]">
                 <span>{trabajo.etapa}</span>
                 <span>{progreso} %</span>
               </div>
@@ -179,7 +197,7 @@ export function SyntheticPanel({ onAnalisis }) {
                   style={{ width: `${Math.max(progreso, 2)}%`, background: 'var(--accent)' }}
                 />
               </div>
-              <p className="mt-2 text-xs text-[var(--ink-muted)]">
+              <p className="mt-2 text-sm text-[var(--ink-muted)]">
                 {mmss(transcurrido)} transcurridos
                 {restante > 0 ? ` · quedan unos ${mmss(restante)}` : ''}
                 {' · '}puedes volver al tablero, esto sigue en el servidor.
@@ -188,7 +206,7 @@ export function SyntheticPanel({ onAnalisis }) {
           )}
 
           {error && (
-            <pre className="mt-3 max-h-40 overflow-auto whitespace-pre-wrap rounded-xl border border-red-400/30 p-3 text-xs text-red-400">
+            <pre className="mt-3 max-h-40 overflow-auto whitespace-pre-wrap rounded-xl border border-red-400/30 p-3 text-sm text-red-400">
               {error}
             </pre>
           )}
@@ -199,14 +217,14 @@ export function SyntheticPanel({ onAnalisis }) {
         <div className="panel-head"><h3>Exactitud frente a la verdad conocida</h3></div>
         <div className="panel-body">
           {!resultado && (
-            <p className="text-sm text-[var(--ink-muted)]">
+            <p className="text-base text-[var(--ink-muted)]">
               Genera una escena para medir precisión y recall de la detección de eventos.
             </p>
           )}
 
           {resultado && (
             <>
-              <p className="text-sm">{resultado.mensaje}</p>
+              <p className="text-base">{resultado.mensaje}</p>
 
               {exactitud?.por_tipo?.length > 0 ? (
                 <div className="table-wrap mt-3">
@@ -242,12 +260,12 @@ export function SyntheticPanel({ onAnalisis }) {
                   </table>
                 </div>
               ) : (
-                <p className="mt-3 text-xs text-[var(--ink-muted)]">
+                <p className="mt-3 text-sm text-[var(--ink-muted)]">
                   No se pudo calcular la exactitud de esta corrida.
                 </p>
               )}
 
-              <p className="mt-4 text-xs text-[var(--ink-muted)]">
+              <p className="mt-4 text-sm text-[var(--ink-muted)]">
                 El análisis también quedó guardado en el historial.
               </p>
             </>

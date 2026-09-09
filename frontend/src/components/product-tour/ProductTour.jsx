@@ -46,7 +46,7 @@ function getTooltipPosition(rect) {
   return { left, top, width: tooltipWidth };
 }
 
-export function ProductTour({ isOpen, onClose }) {
+export function ProductTour({ isOpen, onClose, onNavigate }) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [targetRect, setTargetRect] = useState(null);
   const currentStep = TOUR_STEPS[currentIndex];
@@ -85,8 +85,11 @@ export function ProductTour({ isOpen, onClose }) {
   useEffect(() => {
     if (!isOpen) return undefined;
 
-    const target = currentStep?.target ? document.querySelector(currentStep.target) : null;
-    target?.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
+    // El objetivo de este paso puede vivir en otra pestaña del tablero: las
+    // pestañas inactivas se ocultan con `hidden`, así que primero hay que
+    // activar la que corresponde. Sin esto, el target existe en el DOM pero
+    // mide 0x0 (display: none) y el resaltado aparece en la esquina.
+    onNavigate?.(currentStep);
 
     const frameId = window.requestAnimationFrame(updateTargetRect);
     const delayedFrameId = window.setTimeout(updateTargetRect, 350);

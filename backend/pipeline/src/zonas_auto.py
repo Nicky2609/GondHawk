@@ -52,6 +52,14 @@ import numpy as np
 COLUMNAS = 12
 FILAS = 9
 
+# Ancho máximo (en celdas) de una góndola individual. Sin tránsito que separe
+# dos góndolas contiguas (o con tránsito escaso), _agrupar() las fusiona en un
+# único bloque conexo: por eso el mapa terminaba mostrando "una sola góndola"
+# aunque hubiera varias en fila. Se corta cualquier bloque de estructura más
+# ancho que esto en módulos independientes, que es el tamaño típico de una
+# góndola real dentro de la rejilla de 12 columnas.
+MAX_ANCHO_GONDOLA_CELDAS = 3
+
 
 def _puntaje_estructura(frames: list[np.ndarray]) -> np.ndarray:
     """Puntaje de 'esto parece mueble de exhibición' por celda de la rejilla."""
@@ -158,6 +166,37 @@ def _agrupar(mascara: np.ndarray) -> list[list[tuple[int, int]]]:
             grupos.append(grupo)
 
     return grupos
+
+
+def _dividir_por_ancho(
+    grupo: list[tuple[int, int]], max_ancho: int
+) -> list[list[tuple[int, int]]]:
+    """
+    Corta un grupo de celdas en sub-grupos de a lo sumo `max_ancho` columnas
+    contiguas, para no fusionar varias góndolas en fila en un único bloque.
+    """
+    columnas = sorted({c for _, c in grupo})
+    if not columnas:
+        return [grupo]
+
+    corridas: list[list[int]] = []
+    actual = [columnas[0]]
+    for c in columnas[1:]:
+        if c == actual[-1] + 1:
+            actual.append(c)
+        else:
+            corridas.append(actual)
+            actual = [c]
+    corridas.append(actual)
+
+    subgrupos: list[list[tuple[int, int]]] = []
+    for corrida in corridas:
+        for i in range(0, len(corrida), max_ancho):
+            columnas_del_trozo = set(corrida[i : i + max_ancho])
+            trozo = [(f, c) for f, c in grupo if c in columnas_del_trozo]
+            if trozo:
+                subgrupos.append(trozo)
+    return subgrupos
 
 
 def _celdas_a_poligono(
@@ -282,7 +321,14 @@ def proponer_zonas(
         ("caja", mascara_caja, "caja_"),
         ("pasillo", mascara_pasillo, "pasillo_"),
     ):
-        for grupo in _agrupar(mascara):
+        grupos = _agrupar(mascara)
+        if tipo == "gondola":
+            grupos = [
+                subgrupo
+                for grupo in grupos
+                for subgrupo in _dividir_por_ancho(grupo, MAX_ANCHO_GONDOLA_CELDAS)
+            ]
+        for grupo in grupos:
             if len(grupo) < min_celdas:
                 continue
             confianza = float(np.mean([estructura[f, c] for f, c in grupo]))

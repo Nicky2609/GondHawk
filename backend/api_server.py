@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 import shutil
 import subprocess
 import sys
@@ -17,7 +18,16 @@ from fastapi.responses import FileResponse, Response, StreamingResponse
 ROOT = Path(__file__).resolve().parent
 sys.path.insert(0, str(ROOT / "pipeline" / "src"))
 
-from historial import HistorialAnalisis  # noqa: E402
+# Las credenciales de Supabase se leen de backend/.env. Se carga antes de
+# importar el almacen, porque este decide contra que persiste al construirse.
+try:
+    from dotenv import load_dotenv
+
+    load_dotenv(ROOT / ".env")
+except ImportError:
+    pass
+
+from almacen import crear_historial  # noqa: E402
 from recomendador import generar_recomendaciones  # noqa: E402
 from reportes import EXTENSIONES, generar as generar_reporte  # noqa: E402
 PIPELINE_PATH = ROOT / "pipeline" / "src" / "pipeline.py"
@@ -36,7 +46,9 @@ app.add_middleware(
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
-historial = HistorialAnalisis(OUTPUT_DIR)
+# El historial se elige segun el entorno: Supabase si hay credenciales,
+# disco si no. Ver pipeline/src/almacen.py.
+historial = crear_historial(OUTPUT_DIR)
 
 
 def _read_json(path: Path, fallback: Any | None = None) -> Any:
@@ -74,7 +86,10 @@ async def analyze_video(
             detail=f"Tipo de archivo no soportado: {suffix}. Usa uno de: {sorted(allowed)}",
         )
 
-    upload_path = UPLOAD_DIR / file.filename
+    # Solo el nombre base, sin directorios: un archivo llamado
+    # "../../pipeline/src/pipeline.py" sobrescribiría código del proyecto.
+    nombre_seguro = re.sub(r"[^\w.\-]+", "_", Path(file.filename).name) or "video"
+    upload_path = UPLOAD_DIR / nombre_seguro
     content = await file.read()
     upload_path.write_bytes(content)
 
@@ -197,6 +212,7 @@ def _actualizar(job_id: str, **campos: Any) -> None:
 def generar_escena_sintetica(
     duracion: int = 90,
     personas: int = 14,
+    gondolas: int = 3,
     seed: int = 7,
 ) -> dict[str, Any]:
     """
@@ -212,6 +228,8 @@ def generar_escena_sintetica(
         raise HTTPException(status_code=400, detail="La duración debe estar entre 10 y 180 s.")
     if not (2 <= personas <= 30):
         raise HTTPException(status_code=400, detail="Las personas deben estar entre 2 y 30.")
+    if not (1 <= gondolas <= 6):
+        raise HTTPException(status_code=400, detail="Las góndolas deben estar entre 1 y 6.")
     if not ESCENA3D_PATH.exists():
         raise HTTPException(status_code=500, detail=f"No se encontró {ESCENA3D_PATH}")
 
@@ -226,6 +244,7 @@ def generar_escena_sintetica(
             "iniciado": datetime.now().isoformat(timespec="seconds"),
             "duracion": duracion,
             "personas": personas,
+            "gondolas": gondolas,
             "seed": seed,
             "total_frames": total_frames,
             "estimado_s": int(total_frames / 3 + duracion * 1.5),
@@ -234,7 +253,9 @@ def generar_escena_sintetica(
         }
 
     hilo = threading.Thread(
-        target=_ejecutar_escena_3d, args=(job_id, duracion, personas, seed), daemon=True
+        target=_ejecutar_escena_3d,
+        args=(job_id, duracion, personas, gondolas, seed),
+        daemon=True,
     )
     hilo.start()
 
@@ -260,9 +281,11 @@ def listar_trabajos() -> dict[str, Any]:
         return {"trabajos": [dict(t) for t in trabajos]}
 
 
-def _ejecutar_escena_3d(job_id: str, duracion: int, personas: int, seed: int) -> None:
+def _ejecutar_escena_3d(
+    job_id: str, duracion: int, personas: int, gondolas: int, seed: int
+) -> None:
     """Render + análisis, en un hilo aparte. Reporta progreso leyendo la salida."""
-    nombre = f"escena3d_d{duracion}_p{personas}_s{seed}.mp4"
+    nombre = f"escena3d_d{duracion}_p{personas}_g{gondolas}_s{seed}.mp4"
     ruta_video = UPLOAD_DIR / nombre
     base = ruta_video.with_suffix("")
     total_frames = duracion * 15
@@ -276,6 +299,7 @@ def _ejecutar_escena_3d(job_id: str, duracion: int, personas: int, seed: int) ->
                 "--output", str(ruta_video),
                 "--duracion", str(duracion),
                 "--personas", str(personas),
+                "--gondolas", str(gondolas),
                 "--seed", str(seed),
             ],
             cwd=str(ROOT), stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
@@ -582,6 +606,25 @@ def eliminar_analisis(analisis_id: str) -> dict[str, Any]:
     return {"status": "ok", "eliminado": analisis_id}
 
 
+@app.get("/api/analitica/zonas")
+def analitica_zonas(limite: int = 50) -> dict[str, Any]:
+    """
+    Rendimiento historico por gondola, agregado sobre TODOS los analisis.
+
+    Es la consulta que solo se puede responder con base de datos: con el
+    historial en disco habria que abrir y sumar cada JSON guardado.
+    """
+    if not hasattr(historial, "rendimiento_zonas"):
+        raise HTTPException(
+            status_code=501,
+            detail=(
+                "La analitica historica requiere Supabase configurado. "
+                "Define SUPABASE_URL y SUPABASE_SERVICE_KEY en backend/.env"
+            ),
+        )
+    return {"zonas": historial.rendimiento_zonas(limite)}
+
+
 @app.get("/api/videos/latest")
 def latest_analysis() -> dict[str, Any]:
     pipeline_data = _read_json(OUTPUT_DIR / "metricas_pipeline.json", {})
@@ -612,6 +655,10 @@ def heatmap_status() -> FileResponse:
 
 @app.get("/api/videos/output/{filename}")
 def output_file(filename: str) -> FileResponse:
+    # Igual que en el historial: sin esta validación, /api/videos/output/../../
+    # sirve cualquier archivo del servidor.
+    if "/" in filename or "\\" in filename or ".." in filename:
+        raise HTTPException(status_code=400, detail="Nombre de archivo inválido.")
     target = OUTPUT_DIR / filename
     if not target.exists():
         raise HTTPException(status_code=404, detail=f"No existe el archivo {filename} en la salida del pipeline.")

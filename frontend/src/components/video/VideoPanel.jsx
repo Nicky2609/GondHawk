@@ -9,12 +9,12 @@ import { useState } from 'react';
  * muestra si las está midiendo en el lugar correcto. Un análisis puede fallar
  * en cualquiera de las dos y las métricas se ven igual de plausibles.
  */
-export function VideoPanel({ videoUrl, zonasUrl, embebido = false }) {
+export function VideoPanel({ videoUrl, zonasUrl, embebido = false, onTimeUpdate }) {
   const [vista, setVista] = useState('video');
 
   if (!videoUrl && !zonasUrl) {
     return (
-      <div className={`p-6 text-sm text-[var(--ink-muted)] ${embebido ? '' : 'rounded-2xl border border-[var(--panel-border)] bg-[var(--panel)]'}`}>
+      <div className={`p-6 text-base text-[var(--ink-muted)] ${embebido ? '' : 'rounded-2xl border border-[var(--panel-border)] bg-[var(--panel)]'}`}>
         El video con detección y seguimiento aparecerá después del análisis.
       </div>
     );
@@ -27,7 +27,7 @@ export function VideoPanel({ videoUrl, zonasUrl, embebido = false }) {
           <button
             type="button"
             onClick={() => setVista('video')}
-            className={`rounded-lg px-3 py-1.5 text-xs ${vista === 'video' ? 'bg-[var(--accent)] text-white' : 'text-[var(--ink-muted)]'}`}
+            className={`rounded-lg px-3 py-1.5 text-sm ${vista === 'video' ? 'bg-[var(--accent)] text-white' : 'text-[var(--ink-muted)]'}`}
           >
             Detección y seguimiento
           </button>
@@ -35,7 +35,7 @@ export function VideoPanel({ videoUrl, zonasUrl, embebido = false }) {
             <button
               type="button"
               onClick={() => setVista('zonas')}
-              className={`rounded-lg px-3 py-1.5 text-xs ${vista === 'zonas' ? 'bg-[var(--accent)] text-white' : 'text-[var(--ink-muted)]'}`}
+              className={`rounded-lg px-3 py-1.5 text-sm ${vista === 'zonas' ? 'bg-[var(--accent)] text-white' : 'text-[var(--ink-muted)]'}`}
             >
               Zonas detectadas
             </button>
@@ -44,7 +44,13 @@ export function VideoPanel({ videoUrl, zonasUrl, embebido = false }) {
       </div>
 
       {vista === 'video' && videoUrl ? (
-        <video src={videoUrl} controls className="w-full bg-black" preload="metadata">
+        <video
+          src={videoUrl}
+          controls
+          className="w-full bg-black"
+          preload="metadata"
+          onTimeUpdate={(e) => onTimeUpdate?.(e.currentTarget.currentTime)}
+        >
           Tu navegador no puede reproducir este video.
         </video>
       ) : null}
@@ -52,7 +58,7 @@ export function VideoPanel({ videoUrl, zonasUrl, embebido = false }) {
       {vista === 'zonas' && zonasUrl ? (
         <div>
           <img src={zonasUrl} alt="Zonas detectadas sobre el video" className="w-full" />
-          <p className="px-4 py-3 text-xs text-[var(--ink-muted)]">
+          <p className="px-4 py-3 text-sm text-[var(--ink-muted)]">
             Zonas propuestas automáticamente. Verifica que los recuadros caigan sobre
             los estantes: si no, las métricas de interacción no son válidas.
           </p>

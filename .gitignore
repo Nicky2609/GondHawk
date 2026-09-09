@@ -26,8 +26,15 @@ __pycache__/
 *.webm
 backend/pipeline/uploads/
 
+# Dataset local de entrenamiento y corridas de YOLO (pesan cientos de MB,
+# no forman parte del historial del repo)
+backend/dataset_sintetico/
+runs/
+
 # Salidas generadas por el pipeline
 backend/pipeline/output/
+backend/pipeline/output_3d*/
+backend/pipeline/output_ideal/
 backend/deteccion_personas/output/
 backend/tracking/output/
 backend/mapas_de_calor/output/

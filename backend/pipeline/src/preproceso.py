@@ -171,8 +171,19 @@ class AnonimizadorRostros:
             margen = ancho_persona * self.config.margen
             rx1 = max(0, int(x1 - margen))
             rx2 = min(ancho, int(x2 + margen))
+
+            # Una persona agachada (tomando producto de una repisa baja, el
+            # evento de negocio central del sistema) tiene un bbox más ancho
+            # que alto: ahí la cabeza no está en el "tercio superior" del
+            # bbox de pie, sino mucho más abajo proporcionalmente. Se amplía
+            # la proporción cubierta cuando el bbox es "achatado" para no
+            # dejar la cabeza fuera de la región difuminada.
+            proporcion = self.config.proporcion_cabeza
+            if ancho_persona > alto_persona:
+                proporcion = min(0.7, proporcion * (ancho_persona / alto_persona))
+
             ry1 = max(0, int(y1 - alto_persona * self.config.margen))
-            ry2 = min(alto, int(y1 + alto_persona * self.config.proporcion_cabeza))
+            ry2 = min(alto, int(y1 + alto_persona * proporcion))
 
             if rx2 - rx1 < 2 or ry2 - ry1 < 2:
                 continue

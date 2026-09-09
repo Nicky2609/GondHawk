@@ -416,8 +416,12 @@ class GondolaPipeline:
             )
             guardar_propuesta(propuesta, self.outdir / "zonas_propuestas.json")
             if muestras:
+                # Igual que en el video anotado: esta imagen se muestra en el
+                # tablero, así que las cabezas de las personas detectadas se
+                # difuminan antes de dibujar los polígonos de zonas.
+                frame_preview = self.anonimizador.aplicar(muestras[0], detecciones_muestra[0])
                 dibujar_propuesta(
-                    muestras[0], propuesta, self.outdir / "zonas_propuestas.png"
+                    frame_preview, propuesta, self.outdir / "zonas_propuestas.png"
                 )
             conteo = propuesta["_propuesta"]["conteo"]
             print(
@@ -428,6 +432,15 @@ class GondolaPipeline:
             zonas_raw = propuesta
 
         self.zonas_data_heatmap, self.info_zonas = escalar_zonas(zonas_raw, width, height)
+
+        # Las zonas efectivamente usadas se guardan SIEMPRE, no solo cuando se
+        # generan automáticamente. El mapa de tienda del tablero necesita los
+        # polígonos para dibujarse; leyendo únicamente zonas_propuestas.json se
+        # quedaba en blanco en todo análisis hecho con zonas fijas.
+        (self.outdir / "zonas_usadas.json").write_text(
+            json.dumps(self.zonas_data_heatmap, indent=2, ensure_ascii=False),
+            encoding="utf-8",
+        )
 
         # La máquina de estados (módulo 1) construyó su layout en el
         # constructor, cuando todavía no se conocía la resolución del video ni

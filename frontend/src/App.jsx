@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { HomeIntro } from './components/home/HomeIntro';
 import { useDashboardData } from './hooks/useDashboardData';
 import { resumenGlobal } from './utils/aggregate';
 import { Header } from './components/layout/Header';
@@ -12,13 +13,19 @@ import { SyntheticPanel } from './components/sintetico/SyntheticPanel';
 import { StoreMapPanel } from './components/storemap/StoreMapPanel';
 import { FunnelPanel } from './components/dashboard/FunnelPanel';
 import { PerformanceTable } from './components/dashboard/PerformanceTable';
-import { PrivacyBar } from './components/dashboard/PrivacyBar';
 import { DayRecapPanel } from './components/dashboard/DayRecapPanel';
 import { HistoryPanel } from './components/history/HistoryPanel';
 import { ReportDownloads } from './components/reports/ReportDownloads';
 import { ProductTour } from './components/product-tour/ProductTour';
 import { ANALYSIS_DEFAULTS, DATA_SOURCES, buildAnalyzeUrl } from './config/dataConfig';
-import { BarChart3, Boxes, ChartNoAxesCombined, Clock, Gauge, House, Map, MapPin, PlayCircle, ShieldCheck } from 'lucide-react';
+
+const TABS = [
+  { id: 'cargar', label: 'Cargar video' },
+  { id: 'video', label: 'Video y mapas' },
+  { id: 'rendimiento', label: 'Rendimiento' },
+  { id: 'detalle', label: 'Detalle' },
+  { id: 'historial', label: 'Historial' },
+];
 
 export default function App() {
   const { data, updateFromAnalysis, resetData } = useDashboardData();
@@ -30,7 +37,6 @@ export default function App() {
   const [analysisCompleted, setAnalysisCompleted] = useState(false);
   const fileInputRef = useRef(null);
   const timerRef = useRef(null);
-  const [activeSection, setActiveSection] = useState('cargar');
   const [zonasAuto, setZonasAuto] = useState(ANALYSIS_DEFAULTS.zonasAuto);
   const [frameSkip, setFrameSkip] = useState(ANALYSIS_DEFAULTS.frameSkip);
   const [recomendaciones, setRecomendaciones] = useState(null);
@@ -41,34 +47,16 @@ export default function App() {
   // La generación 3D tarda minutos, así que vive en su propia vista para no
   // interferir con el uso normal del tablero.
   const [vista, setVista] = useState('tablero');
+  const [tab, setTab] = useState('cargar');
   const [tourOpen, setTourOpen] = useState(false);
   const [videoTime, setVideoTime] = useState(0);
+  const [introDone, setIntroDone] = useState(false);
+  const [syntheticKey, setSyntheticKey] = useState(0);
 
   useEffect(() => {
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, []);
-
-  useEffect(() => {
-    const sectionIds = ['cargar', 'video', 'mapa-calor', 'mapa-tienda', 'estado-gondola', 'embudo-gondola', 'recomendaciones', 'historial'];
-    const sections = sectionIds
-      .map((id) => document.getElementById(id))
-      .filter(Boolean);
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const visibleSections = entries
-          .filter((entry) => entry.isIntersecting)
-          .sort((first, second) => first.boundingClientRect.top - second.boundingClientRect.top);
-
-        if (visibleSections[0]) setActiveSection(visibleSections[0].target.id);
-      },
-      { rootMargin: '-18% 0px -68% 0px', threshold: 0 },
-    );
-
-    sections.forEach((section) => observer.observe(section));
-    return () => observer.disconnect();
   }, []);
 
   const currentData = useMemo(() => {
@@ -82,6 +70,10 @@ export default function App() {
   }, [data]);
 
   const resumen = resumenGlobal(currentData.totalGlobal, currentData.zonasGondola);
+
+  if (!introDone) {
+    return <HomeIntro onEnter={() => setIntroDone(true)} />;
+  }
 
   const handleAnalyze = async () => {
     if (!selectedFile) {
@@ -177,46 +169,21 @@ export default function App() {
     setRecomendaciones(null);
     setFuenteReco(null);
     if (fileInputRef.current) fileInputRef.current.value = '';
+    // La escena 3D guarda su propio estado (trabajo, resultado, error) en
+    // SyntheticPanel; cambiar su key la remonta y así queda tan limpia como
+    // el resto del tablero.
+    setSyntheticKey((k) => k + 1);
   };
 
   return (
-    <div className="app-shell">
-      <aside className="sidebar">
-        <div className="brand" data-tour="welcome"><span className="brand-mark"><Gauge size={16} /></span><p className="brand-name">GondHawk<span>Funcionalidades</span></p></div>
-        <nav className="nav-list" aria-label="Navegación principal">
-          {/* Los enlaces del tablero devuelven a la vista de tablero antes de
-              saltar a su sección: si no, al venir de la escena 3D el ancla no
-              encuentra su destino porque esa vista está oculta. */}
-          <a className={`nav-item ${activeSection === 'cargar' ? 'active' : ''}`} href="#cargar" onClick={() => setVista('tablero')}><House size={14} />Cargar video</a>
-          <a className={`nav-item ${activeSection === 'video' ? 'active' : ''}`} href="#video" onClick={() => setVista('tablero')}><PlayCircle size={14} />Video analizado</a>
-          <a className={`nav-item ${activeSection === 'mapa-calor' ? 'active' : ''}`} href="#mapa-calor" onClick={() => setVista('tablero')}><Map size={14} />Mapa de calor</a>
-          <a className={`nav-item ${activeSection === 'mapa-tienda' ? 'active' : ''}`} href="#mapa-tienda" onClick={() => setVista('tablero')}><MapPin size={14} />Mapa de tienda</a>
-          <a className={`nav-item ${activeSection === 'estado-gondola' ? 'active' : ''}`} href="#estado-gondola" onClick={() => setVista('tablero')}><ChartNoAxesCombined size={14} />Estado por góndola</a>
-          <a className={`nav-item ${activeSection === 'embudo-gondola' ? 'active' : ''}`} href="#embudo-gondola" onClick={() => setVista('tablero')}><Boxes size={14} />Embudo por góndola</a>
-          <a className={`nav-item ${activeSection === 'recomendaciones' ? 'active' : ''}`} href="#recomendaciones" onClick={() => setVista('tablero')}><BarChart3 size={14} />Recomendaciones</a>
-          <button
-            type="button"
-            className={`nav-item ${vista === 'sintetico' ? 'active' : ''}`}
-            onClick={() => setVista('sintetico')}
-          >
-            <Boxes size={14} />Escena 3D
-          </button>
-          <a className={`nav-item ${activeSection === 'historial' ? 'active' : ''}`} href="#historial" onClick={() => setVista('tablero')}><Clock size={14} />Historial</a>
-        </nav>
-        <button type="button" className="product-tour-launch" onClick={() => setTourOpen(true)} aria-label="Ver recorrido guiado">
-          ? Ver tour
-        </button>
-        <div className="sidebar-foot"><strong><ShieldCheck size={13} /> Privacidad por diseño</strong>Procesamiento local y métricas anónimas.</div>
-      </aside>
-
+    <div className="page-shell">
+      <Header
+        vista={vista}
+        onToggleVista={() => setVista(vista === 'sintetico' ? 'tablero' : 'sintetico')}
+        onOpenTour={() => setTourOpen(true)}
+      />
+      <div className="app-shell">
       <main className="main-content">
-        <div className="dashboard-header">
-          <Header
-            frames={currentData.resumenPipeline?.frames_procesados}
-            tiempo={currentData.resumenPipeline?.tiempo_procesamiento_seg}
-          />
-        </div>
-
         {/* Las dos vistas se mantienen MONTADAS y se oculta la inactiva con
             CSS. Con un ternario, React desmontaba la vista al cambiar y se
             perdía todo su estado: al volver de la escena 3D había que
@@ -246,6 +213,7 @@ export default function App() {
           </section>
 
           <SyntheticPanel
+            key={syntheticKey}
             onAnalisis={() => {
               // La escena 3D muestra sus propios resultados en esta vista y
               // NO toca el tablero principal: al volver al tablero debe
@@ -257,195 +225,231 @@ export default function App() {
         </div>
 
         <div className="content-stack" hidden={vista !== 'tablero'}>
-          <section id="cargar" className="analysis-card">
-            <div className="analysis-card-head">
-              <div><p className="eyebrow">Análisis de video</p><h2>Carga y procesamiento del flujo</h2><p className="muted">Selecciona un archivo para generar las métricas de esta sesión.</p></div>
-              <div className="upload-actions">
-                {analysisCompleted ? (
-                  <button type="button" onClick={handleClearInformation} className="analyze-button">Limpiar información</button>
-                ) : (
-                  <>
-                    <label className="upload-button" data-tour="upload-video">
-                      <input
-                        ref={fileInputRef}
-                        type="file"
-                        accept="video/*"
-                        className="hidden"
-                        onChange={(event) => setSelectedFile(event.target.files?.[0] ?? null)}
-                      />
-                      {selectedFile ? 'Cambiar video' : 'Seleccionar video'}
-                    </label>
-                    <button type="button" onClick={handleAnalyze} disabled={processing} className="analyze-button" data-tour="start-analysis">
-                      {processing ? 'Analizando...' : 'Analizar video'}
-                    </button>
-                  </>
-                )}
-              </div>
-            </div>
+          <nav className="tab-bar" aria-label="Secciones del tablero">
+            {TABS.map((t) => (
+              <button
+                key={t.id}
+                type="button"
+                className={`tab-button ${tab === t.id ? 'active' : ''}`}
+                onClick={() => setTab(t.id)}
+              >
+                {t.label}
+              </button>
+            ))}
+          </nav>
 
-            <div className="analysis-options" data-tour="analysis-options">
-              <label className="analysis-option">
-                <input
-                  type="checkbox"
-                  checked={zonasAuto}
-                  onChange={(event) => setZonasAuto(event.target.checked)}
-                />
-                <span>
-                  Detectar zonas automáticamente
-                  <small>Recomendado. Sin esto se usan las zonas del video de calibración.</small>
-                </span>
-              </label>
-              <label className="analysis-option">
-                <span>
-                  Frames analizados
-                  <small>Saltar frames acelera el análisis pero fragmenta el seguimiento.</small>
-                </span>
-                <select value={frameSkip} onChange={(event) => setFrameSkip(Number(event.target.value))}>
-                  <option value={1}>Todos (mejor precisión)</option>
-                  <option value={2}>1 de cada 2</option>
-                  <option value={3}>1 de cada 3 (más rápido)</option>
-                </select>
-              </label>
-            </div>
+          {/* Cada pestaña queda MONTADA y se oculta con CSS (mismo motivo que
+              la vista tablero/escena 3D): así el video no se reinicia ni el
+              historial se vuelve a pedir al cambiar de pestaña. */}
+          <div className="tab-frame">
+            <div className="tab-panel" hidden={tab !== 'cargar'}>
+              <section id="cargar" className="analysis-card">
+                <div className="analysis-card-head">
+                  <div><p className="eyebrow">Análisis de video</p><h2>Carga y procesamiento del flujo</h2><p className="muted">Selecciona un archivo para generar las métricas de esta sesión.</p></div>
+                  <div className="upload-actions">
+                    {analysisCompleted ? (
+                      <button type="button" onClick={handleClearInformation} className="analyze-button">Limpiar información</button>
+                    ) : (
+                      <>
+                        <label className="upload-button" data-tour="upload-video">
+                          <input
+                            ref={fileInputRef}
+                            type="file"
+                            accept="video/*"
+                            className="hidden"
+                            onChange={(event) => setSelectedFile(event.target.files?.[0] ?? null)}
+                          />
+                          {selectedFile ? 'Cambiar video' : 'Seleccionar video'}
+                        </label>
+                        <button type="button" onClick={handleAnalyze} disabled={processing} className="analyze-button" data-tour="start-analysis">
+                          {processing ? 'Analizando...' : 'Analizar video'}
+                        </button>
+                      </>
+                    )}
+                  </div>
+                </div>
 
-            <div className="file-status">
-              <div className="min-w-0"><p className="eyebrow">Archivo seleccionado</p><p className="mt-1 truncate text-sm text-[var(--ink)]">
-                {selectedFile ? selectedFile.name : 'Sin archivo seleccionado'}
-              </p></div>
+                <div className="analysis-options" data-tour="analysis-options">
+                  <label className="analysis-option">
+                    <input
+                      type="checkbox"
+                      checked={zonasAuto}
+                      onChange={(event) => setZonasAuto(event.target.checked)}
+                    />
+                    <span>
+                      Detectar zonas automáticamente
+                      <small>Recomendado. Sin esto se usan las zonas del video de calibración.</small>
+                    </span>
+                  </label>
+                  <label className="analysis-option">
+                    <span>
+                      Frames analizados
+                      <small>Saltar frames acelera el análisis pero fragmenta el seguimiento.</small>
+                    </span>
+                    <select value={frameSkip} onChange={(event) => setFrameSkip(Number(event.target.value))}>
+                      <option value={1}>Todos (mejor precisión)</option>
+                      <option value={2}>1 de cada 2</option>
+                      <option value={3}>1 de cada 3 (más rápido)</option>
+                    </select>
+                  </label>
+                </div>
 
-              <div className="progress-wrap"><div className="progress-ring"><svg viewBox="0 0 100 100">
-                <circle cx="50" cy="50" r="42" stroke="rgba(255,255,255,0.15)" strokeWidth="10" fill="none" />
-                <circle
-                  cx="50"
-                  cy="50"
-                  r="42"
-                  stroke="var(--accent)"
-                  strokeWidth="10"
-                  strokeLinecap="round"
-                  fill="none"
-                  strokeDasharray={264}
-                  strokeDashoffset={264 - (264 * progress) / 100}
-                  style={{ transition: 'stroke-dashoffset 0.25s ease' }}
-                />
-              </svg><span>{progress}%</span></div><div><p>{processing ? 'Procesando video' : 'Listo para analizar'}</p><p>{analysisMessage}</p></div></div>
-            </div>
+                <div className="file-status">
+                  <div className="min-w-0"><p className="eyebrow">Archivo seleccionado</p><p className="mt-1 truncate text-base text-[var(--ink)]">
+                    {selectedFile ? selectedFile.name : 'Sin archivo seleccionado'}
+                  </p></div>
 
-            {lastResult && (
-              <div className="result-message">
-                {/* El backend siempre manda `mensaje`; se lee primero. Los
-                    otros dos campos cubren errores de FastAPI (detail) y
-                    respuestas antiguas. */}
-                {lastResult.mensaje ?? lastResult.detail ?? lastResult.message ?? 'Análisis completado.'}
-              </div>
-            )}
-          </section>
+                  <div className="progress-wrap"><div className="progress-ring"><svg viewBox="0 0 100 100">
+                    <circle cx="50" cy="50" r="42" stroke="rgba(62,46,34,0.15)" strokeWidth="10" fill="none" />
+                    <circle
+                      cx="50"
+                      cy="50"
+                      r="42"
+                      stroke="var(--accent)"
+                      strokeWidth="10"
+                      strokeLinecap="round"
+                      fill="none"
+                      strokeDasharray={264}
+                      strokeDashoffset={264 - (264 * progress) / 100}
+                      style={{ transition: 'stroke-dashoffset 0.25s ease' }}
+                    />
+                  </svg><span>{progress}%</span></div><div><p>{processing ? 'Procesando video' : 'Listo para analizar'}</p><p>{analysisMessage}</p></div></div>
+                </div>
 
-          <KpiStrip resumen={resumen} />
-
-          <DayRecapPanel
-            totalGlobal={currentData.totalGlobal}
-            zonasGondola={currentData.zonasGondola}
-            conteoZonas={currentData.conteoZonas}
-          />
-
-          {/* Primera fila: Video + Mapa de calor */}
-          <div id="video" className="dashboard-grid dashboard-grid-2">
-            <section className="panel">
-              <div className="panel-head">
-                <h3>Video analizado</h3>
-                <span className="badge badge-ok">Anonimizado</span>
-              </div>
-              <VideoPanel
-                videoUrl={currentData.videoAnotadoUrl}
-                zonasUrl={currentData.zonasPropuestasUrl}
-                embebido
-                onTimeUpdate={setVideoTime}
-              />
-            </section>
-
-            <section id="mapa-calor" className="panel" data-tour="heatmap">
-              <div className="panel-head"><h3>Mapa de calor de flujo</h3></div>
-              <HeatmapPanel heatmapUrl={currentData.heatmapUrl} />
-            </section>
-          </div>
-
-          {/* Segunda fila: Embudo + Mapa de tienda */}
-          <div className="dashboard-grid dashboard-grid-2">
-            <FunnelPanel
-              total={currentData.totalGlobal}
-              zonas={currentData.zonasGondola}
-              zonaSeleccionada={zonaSeleccionada}
-              onSeleccionar={setZonaSeleccionada}
-            />
-
-            <section id="mapa-tienda" className="panel" data-tour="store-map">
-              <StoreMapPanel
-                zonasData={currentData.zonasPropuestas}
-                conteoZonas={currentData.conteoZonas}
-                tracking={currentData.tracking}
-                currentTimeSec={videoTime}
-              />
-            </section>
-          </div>
-
-          {/* Tercera fila: Estado góndola + Recomendaciones */}
-          <div id="estado-gondola" className="dashboard-grid dashboard-grid-2">
-            <PerformanceTable
-              zonas={currentData.zonasGondola}
-              zonaSeleccionada={zonaSeleccionada}
-              onSeleccionar={setZonaSeleccionada}
-            />
-
-            <section id="recomendaciones" className="panel" data-tour="recommendations">
-              <div className="panel-head"><h3>Recomendaciones</h3></div>
-              <div className="panel-body">
-                <AlertsPanel
-                  alertas={currentData.alertas}
-                  recomendaciones={recomendaciones ?? currentData.recomendaciones}
-                  fuente={fuenteReco ?? currentData.recomendacionesFuente}
-                />
-              </div>
-            </section>
-          </div>
-
-          <div id="embudo-gondola" className="dashboard-grid dashboard-grid-2">
-            <section className="panel">
-              <div className="panel-head"><h3>Detalle por góndola</h3></div>
-              <div className="panel-body">
-                <ZoneShelfPanel zonasGondola={currentData.zonasGondola} />
-              </div>
-            </section>
-
-            <section className="panel">
-              <div className="panel-head">
-                <h3>Embudo detallado</h3>
-              </div>
-              <div className="panel-body">
-                <ZoneFunnelTable zonasGondola={currentData.zonasGondola} />
-                {currentData.analisisId && (
-                  <div className="mt-4">
-                    <ReportDownloads analisisId={currentData.analisisId} />
+                {lastResult && (
+                  <div className="result-message">
+                    {/* El backend siempre manda `mensaje`; se lee primero. Los
+                        otros dos campos cubren errores de FastAPI (detail) y
+                        respuestas antiguas. */}
+                    {lastResult.mensaje ?? lastResult.detail ?? lastResult.message ?? 'Análisis completado.'}
                   </div>
                 )}
-              </div>
-            </section>
-          </div>
+              </section>
 
-          <div id="historial" className="dashboard-grid dashboard-grid-2">
-            <HistoryPanel
-              recargar={historialKey}
-              onAbrir={(detalle, id) => {
-                updateFromAnalysis({ ...detalle, analisis_id: id }, Date.now());
-                setAnalysisCompleted(true);
-                setAnalysisMessage(`Mostrando análisis de ${detalle?.video ?? id}.`);
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-              }}
-            />
-            <PrivacyBar />
+              <KpiStrip resumen={resumen} />
+
+              <div className="tab-row tab-row-1">
+                <DayRecapPanel
+                  totalGlobal={currentData.totalGlobal}
+                  zonasGondola={currentData.zonasGondola}
+                  conteoZonas={currentData.conteoZonas}
+                />
+              </div>
+            </div>
+
+            <div className="tab-panel" hidden={tab !== 'video'}>
+              <div className="tab-row tab-row-2">
+                <section id="video" className="panel">
+                  <div className="panel-head">
+                    <h3>Video analizado</h3>
+                    <span className="badge badge-ok">Anonimizado</span>
+                  </div>
+                  <VideoPanel
+                    videoUrl={currentData.videoAnotadoUrl}
+                    zonasUrl={currentData.zonasPropuestasUrl}
+                    embebido
+                    onTimeUpdate={setVideoTime}
+                  />
+                </section>
+
+                <section id="mapa-calor" className="panel" data-tour="heatmap">
+                  <div className="panel-head"><h3>Mapa de calor de flujo</h3></div>
+                  <HeatmapPanel heatmapUrl={currentData.heatmapUrl} />
+                </section>
+              </div>
+
+              <div className="tab-row tab-row-1" data-tour="store-map">
+                <section id="mapa-tienda" className="panel">
+                  <StoreMapPanel
+                    zonasData={currentData.zonasPropuestas}
+                    conteoZonas={currentData.conteoZonas}
+                    tracking={currentData.tracking}
+                    currentTimeSec={videoTime}
+                  />
+                </section>
+              </div>
+            </div>
+
+            <div className="tab-panel" hidden={tab !== 'rendimiento'}>
+              <div className="tab-row tab-row-2-wide" id="estado-gondola">
+                <FunnelPanel
+                  total={currentData.totalGlobal}
+                  zonas={currentData.zonasGondola}
+                  zonaSeleccionada={zonaSeleccionada}
+                  onSeleccionar={setZonaSeleccionada}
+                />
+
+                <PerformanceTable
+                  zonas={currentData.zonasGondola}
+                  zonaSeleccionada={zonaSeleccionada}
+                  onSeleccionar={setZonaSeleccionada}
+                />
+              </div>
+
+              <div className="tab-row tab-row-1">
+                <section id="recomendaciones" className="panel" data-tour="recommendations">
+                  <div className="panel-head"><h3>Recomendaciones</h3></div>
+                  <div className="panel-body">
+                    <AlertsPanel
+                      alertas={currentData.alertas}
+                      recomendaciones={recomendaciones ?? currentData.recomendaciones}
+                      fuente={fuenteReco ?? currentData.recomendacionesFuente}
+                    />
+                  </div>
+                </section>
+              </div>
+            </div>
+
+            <div className="tab-panel" hidden={tab !== 'detalle'}>
+              <div className="tab-row tab-row-2" id="embudo-gondola">
+                <section className="panel">
+                  <div className="panel-head"><h3>Detalle por góndola</h3></div>
+                  <div className="panel-body">
+                    <ZoneShelfPanel zonasGondola={currentData.zonasGondola} />
+                  </div>
+                </section>
+
+                <section className="panel">
+                  <div className="panel-head">
+                    <h3>Embudo detallado</h3>
+                  </div>
+                  <div className="panel-body">
+                    <ZoneFunnelTable zonasGondola={currentData.zonasGondola} />
+                    {currentData.analisisId && (
+                      <div className="mt-4">
+                        <ReportDownloads analisisId={currentData.analisisId} />
+                      </div>
+                    )}
+                  </div>
+                </section>
+              </div>
+            </div>
+
+            <div className="tab-panel" hidden={tab !== 'historial'}>
+              <div className="tab-row tab-row-1">
+                <HistoryPanel
+                  recargar={historialKey}
+                  onAbrir={(detalle, id) => {
+                    updateFromAnalysis({ ...detalle, analisis_id: id }, Date.now());
+                    setAnalysisCompleted(true);
+                    setAnalysisMessage(`Mostrando análisis de ${detalle?.video ?? id}.`);
+                    setTab('cargar');
+                  }}
+                />
+              </div>
+            </div>
           </div>
         </div>
       </main>
-      <ProductTour isOpen={tourOpen} onClose={() => setTourOpen(false)} />
+      </div>
+      <ProductTour
+        isOpen={tourOpen}
+        onClose={() => setTourOpen(false)}
+        onNavigate={(step) => {
+          setVista('tablero');
+          if (step?.tab) setTab(step.tab);
+        }}
+      />
     </div>
   );
 }

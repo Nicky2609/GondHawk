@@ -33,6 +33,7 @@ existe para no tener que recordar esto cada vez.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from pathlib import Path
 from typing import List, Optional
 
 import numpy as np
@@ -41,6 +42,11 @@ from ultralytics import YOLO
 # En el dataset COCO (con el que viene entrenado YOLO por defecto),
 # la clase 0 es "person". Filtramos solo esa clase.
 PERSON_CLASS_ID = 0
+
+# Raiz del proyecto (GondHawk-main), calculada desde este archivo para que
+# el path del modelo no dependa de la maquina/usuario donde se clone el repo.
+_PROJECT_ROOT = Path(__file__).resolve().parents[3]
+_MODELO_SINTETICO = _PROJECT_ROOT / "runs" / "detect" / "train" / "weights" / "last.pt"
 
 # Perfiles de deteccion segun el origen del video.
 PERFILES = {
@@ -53,7 +59,7 @@ PERFILES = {
     "conf": 0.35,
     "iou": 0.45,
     "imgsz": 960,
-    "model": "C:/Users/USUARIO/GondHawk/runs/detect/train/weights/last.pt",
+    "model": str(_MODELO_SINTETICO),
 },
     # Para diagnosticar: acepta casi todo. Sirve para saber si el detector
     # "ve" algo o no ve nada, no para producir metricas.
