@@ -56,11 +56,23 @@ ARCHIVOS_A_CONSERVAR = [
     "video_anotado.mp4",
     "zonas_propuestas.png",
     "zonas_propuestas.json",
+    "zonas_usadas.json",
     "eventos_interaccion.jsonl",
     "eventos_compliance.jsonl",
     "dwell_time.jsonl",
     "tracking.jsonl",
 ]
+
+
+# Un identificador de análisis es siempre "AAAAMMDDTHHMMSS_slug": solo
+# letras, dígitos, guion y guion bajo. Validarlo es lo que impide que un
+# `analisis_id` como "../../.." saque las rutas de la carpeta de análisis y
+# permita leer —o borrar— cualquier carpeta del servidor a través de la API.
+_ID_VALIDO = re.compile(r"^[A-Za-z0-9_.-]{1,120}$")
+
+
+def id_valido(analisis_id: str) -> bool:
+    return bool(analisis_id) and ".." not in analisis_id and bool(_ID_VALIDO.match(analisis_id))
 
 
 def _slug(texto: str, largo: int = 40) -> str:
@@ -190,13 +202,17 @@ class HistorialAnalisis:
         carpeta. Sin esta comprobación, un `nombre` como `../../etc/passwd`
         serviría para leer cualquier archivo del servidor a través de la API.
         """
+        if not id_valido(analisis_id):
+            return None
         base = (self.dir_analisis / analisis_id).resolve()
         candidato = (base / nombre).resolve()
-        if not str(candidato).startswith(str(base)):
+        if base != candidato and base not in candidato.parents:
             return None
         return candidato if candidato.exists() and candidato.is_file() else None
 
     def eliminar(self, analisis_id: str) -> bool:
+        if not id_valido(analisis_id):
+            return False
         destino = self.dir_analisis / analisis_id
         if not destino.exists():
             return False

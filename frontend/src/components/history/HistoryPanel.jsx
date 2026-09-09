@@ -75,28 +75,28 @@ export function HistoryPanel({ onAbrir, recargar }) {
   };
 
   return (
-    <div className="rounded-2xl border border-[var(--panel-border)] bg-[var(--panel)] p-4" data-tour="history">
+    <div className="flex h-full min-h-0 w-full min-w-0 flex-col rounded-2xl border border-[var(--panel-border)] bg-[var(--panel)] p-4" data-tour="history">
       <div className="mb-3 flex items-center justify-between">
         <div>
-          <p className="text-xs text-[var(--ink-muted)]">Historial de análisis</p>
+          <p className="text-sm text-[var(--ink-muted)]">Historial de análisis</p>
           {estadisticas?.total_analisis > 0 && (
-            <p className="text-[11px] text-[var(--ink-muted)]">
+            <p className="text-[13px] text-[var(--ink-muted)]">
               {estadisticas.total_analisis} análisis · interacción media{' '}
               {porcentaje(estadisticas.promedio_tasa_interaccion)}
             </p>
           )}
         </div>
-        <button type="button" onClick={() => cargar()} className="text-xs text-[var(--ink-muted)] hover:text-[var(--ink)]">
+        <button type="button" onClick={() => cargar()} className="text-sm text-[var(--ink-muted)] hover:text-[var(--ink)]">
           {cargando ? 'Cargando...' : 'Actualizar'}
         </button>
       </div>
 
-      {error && <p className="mb-2 text-xs text-red-400">{error}</p>}
+      {error && <p className="mb-2 text-sm text-red-400">{error}</p>}
 
       {analisis.length === 0 && !cargando ? (
-        <p className="text-sm text-[var(--ink-muted)]">Todavía no hay análisis guardados.</p>
+        <p className="text-base text-[var(--ink-muted)]">Todavía no hay análisis guardados.</p>
       ) : (
-        <ul className="divide-y divide-[var(--panel-border)]">
+        <ul className="min-h-0 flex-1 divide-y divide-[var(--panel-border)] overflow-y-auto">
           {analisis.map((item) => (
             <li key={item.id}>
               <button
@@ -105,10 +105,10 @@ export function HistoryPanel({ onAbrir, recargar }) {
                 className="flex w-full items-center justify-between gap-3 py-3 text-left hover:opacity-80"
               >
                 <div className="min-w-0">
-                  <p className="truncate text-sm">{item.video}</p>
-                  <p className="text-[11px] text-[var(--ink-muted)]">{fecha(item.fecha)}</p>
+                  <p className="truncate text-base">{item.video}</p>
+                  <p className="text-[13px] text-[var(--ink-muted)]">{fecha(item.fecha)}</p>
                 </div>
-                <div className="flex shrink-0 items-center gap-4 text-xs text-[var(--ink-muted)]">
+                <div className="flex shrink-0 items-center gap-4 text-sm text-[var(--ink-muted)]">
                   <span>{item.resumen?.visitas ?? 0} visitas</span>
                   <span>{porcentaje(item.resumen?.tasa_interaccion)}</span>
                   <span

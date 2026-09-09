@@ -153,12 +153,18 @@ class PersonaZ:
 class Tienda3D:
     """Sala de ventas: piso, paredes y dos hileras de góndolas."""
 
-    def __init__(self, rng: random.Random):
+    ESPACIADO_X = 3.1
+
+    def __init__(self, rng: random.Random, n_gondolas: int = 3):
         self.rng = rng
+        # Góndolas repartidas simétricamente sobre el eje X, con el mismo
+        # espaciado que antes se hardcodeaba para 3. Antes el número de
+        # góndolas del mundo 3D era fijo sin importar lo que pidiera quien
+        # generaba la escena; ahora escala con `n_gondolas`.
+        centro = (n_gondolas - 1) / 2
         self.gondolas = [
-            GondolaZ("gondola_A1", -3.1, 4.2, 2.5, frente=-1),
-            GondolaZ("gondola_A2", 0.0, 4.2, 2.5, frente=-1),
-            GondolaZ("gondola_A3", 3.1, 4.2, 2.5, frente=-1),
+            GondolaZ(f"gondola_A{i + 1}", (i - centro) * self.ESPACIADO_X, 4.2, 2.5, frente=-1)
+            for i in range(n_gondolas)
         ]
         self._estaticas = self._construir()
 
@@ -187,6 +193,7 @@ class GeneradorEscena3D:
         fps: int = 15,
         duracion_s: int = 90,
         n_personas: int = 16,
+        n_gondolas: int = 3,
         seed: int = 7,
     ):
         self.rng = random.Random(seed)
@@ -195,7 +202,7 @@ class GeneradorEscena3D:
         self.n_personas = n_personas
         self.seed = seed
 
-        self.tienda = Tienda3D(self.rng)
+        self.tienda = Tienda3D(self.rng, n_gondolas=n_gondolas)
         # Cámara de techo mirando el lineal, como una de seguridad real.
         self.camara = Camara(
             posicion=np.array([0.0, 3.1, -3.4]),
@@ -591,12 +598,16 @@ def main() -> None:
             "5 segundos de duración por persona."
         ),
     )
+    parser.add_argument(
+        "--gondolas", type=int, default=3, help="Número de góndolas del mundo 3D",
+    )
     parser.add_argument("--seed", type=int, default=7)
     args = parser.parse_args()
 
     generador = GeneradorEscena3D(
         ancho=args.ancho, alto=args.alto, fps=args.fps,
-        duracion_s=args.duracion, n_personas=args.personas, seed=args.seed,
+        duracion_s=args.duracion, n_personas=args.personas,
+        n_gondolas=args.gondolas, seed=args.seed,
     )
     segundos_por_persona = args.duracion / max(1, args.personas)
     if segundos_por_persona < 4.0:

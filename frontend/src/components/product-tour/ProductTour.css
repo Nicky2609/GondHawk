@@ -8,17 +8,17 @@
   border: 1px solid var(--panel-border);
   border-radius: 7px;
   padding: 9px 10px;
-  background: rgba(57, 120, 255, 0.08);
-  color: #c8d7ec;
+  background: rgba(122, 139, 156, 0.1);
+  color: var(--ink-muted);
   cursor: pointer;
-  font-size: 11px;
+  font-size: 13px;
   transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
 }
 
 .product-tour-launch:hover {
-  border-color: var(--accent);
-  background: rgba(57, 120, 255, 0.16);
-  color: white;
+  border-color: var(--cyan);
+  background: rgba(122, 139, 156, 0.2);
+  color: var(--ink);
 }
 
 .product-tour-launch:focus-visible,
@@ -38,9 +38,9 @@
 .product-tour-spotlight {
   position: fixed;
   z-index: 1001;
-  border: 2px solid rgba(91, 214, 231, 0.9);
+  border: 2px solid var(--accent);
   border-radius: 10px;
-  box-shadow: 0 0 0 9999px rgba(2, 8, 18, 0.74), 0 0 24px rgba(54, 214, 231, 0.28);
+  box-shadow: 0 0 0 9999px rgba(10, 10, 11, 0.74), 0 0 24px rgba(207, 160, 63, 0.28);
   pointer-events: none;
   transition: top 0.2s ease, left 0.2s ease, width 0.2s ease, height 0.2s ease;
 }
@@ -49,10 +49,10 @@
   position: fixed;
   z-index: 1002;
   max-width: calc(100vw - 24px);
-  border: 1px solid #31527d;
+  border: 2px solid var(--panel-border-strong);
   border-radius: 12px;
   padding: 16px;
-  background: #101d31;
+  background: var(--panel-raised);
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.42);
   color: var(--ink);
 }
@@ -67,7 +67,7 @@
 .product-tour-progress {
   margin: 0 0 5px;
   color: var(--cyan);
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -75,8 +75,9 @@
 
 .product-tour-title {
   margin: 0;
-  color: white;
-  font-size: 17px;
+  color: var(--ink);
+  font-family: var(--font-heading);
+  font-size: 21px;
   font-weight: 650;
   line-height: 1.25;
 }
@@ -95,14 +96,14 @@
 }
 
 .product-tour-close:hover {
-  background: rgba(255, 255, 255, 0.06);
-  color: white;
+  background: rgba(62, 46, 34, 0.08);
+  color: var(--ink);
 }
 
 .product-tour-content {
   margin: 12px 0 0;
-  color: #b7c6da;
-  font-size: 13px;
+  color: var(--ink-muted);
+  font-size: 15px;
   line-height: 1.55;
 }
 
@@ -115,9 +116,9 @@
 
 .product-tour-button {
   border-radius: 7px;
-  padding: 8px 13px;
+  padding: 9px 15px;
   cursor: pointer;
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 650;
 }
 
@@ -128,14 +129,14 @@
 
 .product-tour-button-secondary {
   border: 1px solid var(--panel-border);
-  background: #0b1728;
-  color: #c5d2e4;
+  background: var(--panel);
+  color: var(--ink-muted);
 }
 
 .product-tour-button-primary {
-  border: 1px solid #5c8cff;
+  border: 1px solid var(--accent-soft);
   background: var(--accent);
-  color: white;
+  color: var(--bg);
 }
 
 @media (max-width: 640px) {
@@ -144,10 +145,10 @@
   }
 
   .product-tour-title {
-    font-size: 16px;
+    font-size: 18px;
   }
 
   .product-tour-content {
-    font-size: 12px;
+    font-size: 14px;
   }
 }

@@ -19,7 +19,7 @@ export function AlertsPanel({ alertas, recomendaciones, fuente }) {
   const items = recomendaciones?.length ? recomendaciones : alertas ?? [];
 
   if (items.length === 0) {
-    return <p className="text-sm text-[var(--ink-muted)]">Sin recomendaciones para este análisis.</p>;
+    return <p className="text-base text-[var(--ink-muted)]">Sin recomendaciones para este análisis.</p>;
   }
 
   const etiquetaFuente = fuente?.startsWith('ia:')
@@ -31,23 +31,23 @@ export function AlertsPanel({ alertas, recomendaciones, fuente }) {
   return (
     <div className="rounded-2xl border border-[var(--panel-border)] bg-[var(--panel)] p-4">
       {etiquetaFuente && (
-        <p className="mb-3 text-[11px] text-[var(--ink-muted)]">{etiquetaFuente}</p>
+        <p className="mb-3 text-[13px] text-[var(--ink-muted)]">{etiquetaFuente}</p>
       )}
       <ul className="space-y-3">
         {items.map((item, i) => (
           <li key={`${item.zone_id}-${i}`} className="rounded-xl border border-[var(--panel-border)] p-3">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="text-sm font-medium">{zoneLabel(item.zone_id)}</span>
+              <span className="text-base font-medium">{zoneLabel(item.zone_id)}</span>
               {item.prioridad && (
-                <span className={`rounded-full border px-2 py-0.5 text-[10px] uppercase ${COLOR_PRIORIDAD[item.prioridad] ?? ''}`}>
+                <span className={`rounded-full border px-2 py-0.5 text-[12px] uppercase ${COLOR_PRIORIDAD[item.prioridad] ?? ''}`}>
                   {item.prioridad}
                 </span>
               )}
             </div>
-            {item.titulo && <p className="mt-1 text-sm">{item.titulo}</p>}
-            <p className="mt-1 text-xs text-[var(--ink-muted)]">{item.detalle ?? item.mensaje}</p>
+            {item.titulo && <p className="mt-1 text-base">{item.titulo}</p>}
+            <p className="mt-1 text-sm text-[var(--ink-muted)]">{item.detalle ?? item.mensaje}</p>
             {item.accion && (
-              <p className="mt-2 text-xs">
+              <p className="mt-2 text-sm">
                 <span className="text-[var(--ink-muted)]">Acción: </span>
                 {item.accion}
               </p>

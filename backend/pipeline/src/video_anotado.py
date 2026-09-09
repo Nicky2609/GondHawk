@@ -115,8 +115,13 @@ class VideoAnotado:
     ) -> None:
         """Anota un frame y lo escribe. No modifica el frame original."""
         # 1. Anonimizar SIEMPRE. Este es el único artefacto con imágenes.
+        # Se usa la UNION de detecciones y tracks, no "detecciones or tracks":
+        # con ese `or`, en cuanto había una sola detección en el frame se
+        # ignoraban por completo los tracks, y una persona que el detector
+        # perdió puntualmente en ese frame (oclusión, blur de movimiento) pero
+        # que el tracker seguía prediciendo quedaba sin difuminar.
         if self.anonimizador is not None:
-            lienzo = self.anonimizador.aplicar(frame, detecciones or tracks)
+            lienzo = self.anonimizador.aplicar(frame, (detecciones or []) + (tracks or []))
         else:
             lienzo = frame.copy()
 

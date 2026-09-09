@@ -18,3 +18,6 @@ tiempo_permanencia/output/
 deteccion_eventos/output/
 pipeline/output/
 !**/output/.gitkeep
+
+# Credenciales de Supabase: nunca se versionan.
+.env

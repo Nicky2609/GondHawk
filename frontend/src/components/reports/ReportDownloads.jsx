@@ -47,7 +47,7 @@ export function ReportDownloads({ analisisId }) {
 
   return (
     <div className="rounded-2xl border border-[var(--panel-border)] bg-[var(--panel)] p-4" data-tour="reports">
-      <p className="text-xs text-[var(--ink-muted)]">Descargar análisis</p>
+      <p className="text-sm text-[var(--ink-muted)]">Descargar análisis</p>
       <div className="mt-3 flex flex-wrap gap-2">
         {FORMATOS.map((f) => (
           <button
@@ -55,14 +55,14 @@ export function ReportDownloads({ analisisId }) {
             type="button"
             onClick={() => descargar(f.id)}
             disabled={descargando !== null}
-            className="rounded-xl border border-[var(--panel-border)] px-4 py-2 text-left text-sm hover:border-[var(--accent)] disabled:opacity-50"
+            className="rounded-xl border border-[var(--panel-border)] px-4 py-2 text-left text-base hover:border-[var(--accent)] disabled:opacity-50"
           >
             <span className="block">{descargando === f.id ? 'Generando...' : f.label}</span>
-            <span className="block text-[11px] text-[var(--ink-muted)]">{f.hint}</span>
+            <span className="block text-[13px] text-[var(--ink-muted)]">{f.hint}</span>
           </button>
         ))}
       </div>
-      {error && <p className="mt-3 text-xs text-red-400">{error}</p>}
+      {error && <p className="mt-3 text-sm text-red-400">{error}</p>}
     </div>
   );
 }
