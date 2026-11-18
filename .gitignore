@@ -54,3 +54,6 @@ pnpm-debug.log*
 .idea/
 .DS_Store
 Thumbs.db
+
+# package-lock.json suelto en la raíz (no hay package.json aquí)
+/package-lock.json
