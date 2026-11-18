@@ -66,18 +66,23 @@ class Zona:
         if x < x1 or x > x2 or y < y1 or y > y2:
             return False  # descarte rapido por bounding box
 
-        if self._en_borde(x, y):
-            return True
-
         dentro = False
-        n = len(self.poligono)
+        poligono = self.poligono
+        n = len(poligono)
+        tol = 1e-9
+        ax, ay = poligono[-1]
         for i in range(n):
-            ax, ay = self.poligono[i]
-            bx, by = self.poligono[(i + 1) % n]
+            bx, by = poligono[i]
+            cruz = (bx - ax) * (y - ay) - (by - ay) * (x - ax)
+            if abs(cruz) <= tol:
+                min_x, max_x = (ax, bx) if ax <= bx else (bx, ax)
+                min_y, max_y = (ay, by) if ay <= by else (by, ay)
+                if min_x - tol <= x <= max_x + tol and min_y - tol <= y <= max_y + tol:
+                    return True
             if (ay > y) != (by > y):
-                t = (y - ay) / (by - ay)
-                if x < ax + t * (bx - ax):
+                if x < ax + ((y - ay) / (by - ay)) * (bx - ax):
                     dentro = not dentro
+            ax, ay = bx, by
         return dentro
 
     def _en_borde(self, x: float, y: float, tol: float = 1e-9) -> bool:

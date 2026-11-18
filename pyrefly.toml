@@ -1,0 +1,12 @@
+project-includes = ["backend/**/*.py"]
+python-version = "3.11"
+search-path = [
+  "backend",
+  "backend/pipeline/src",
+  "backend/deteccion_personas/src",
+  "backend/tracking/src",
+  "backend/mapas_de_calor/src",
+  "backend/tiempo_permanencia/src",
+  "backend/deteccion_eventos/src",
+]
+ignore-missing-imports = ["almacen", "recomendador", "reportes"]

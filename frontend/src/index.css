@@ -1,12 +1,12 @@
 @import "tailwindcss";
 
-@import "tailwindcss";
-
 :root {
   --bg: #07101f;
   --bg-soft: #0b1628;
+  --background: var(--bg-soft);
   --panel: #101d31;
   --panel-raised: #14243a;
+  --panel-border: rgba(130, 147, 172, 0.25);
   --ink: #eef4ff;
   --ink-muted: #8293ac;
   --accent: #3978ff;
@@ -165,6 +165,97 @@ p {
   justify-content: space-between;
   gap: 16px;
   margin-bottom: 14px;
+}
+
+.analysis-options {
+  margin-top: 12px;
+  border: 1px solid var(--panel-border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  background: rgba(6, 16, 30, .38);
+}
+
+.analysis-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 12px;
+  color: var(--ink);
+}
+
+.analysis-option small {
+  display: block;
+  margin-top: 2px;
+  font-size: 11px;
+  color: var(--ink-muted);
+}
+
+.analysis-option select {
+  padding: 6px 10px;
+  border-radius: 7px;
+  border: 1px solid var(--panel-border);
+  background: #0d1b2e;
+  color: var(--ink);
+  font-size: 12px;
+}
+
+.media-grid {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.media-grid .panel {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.media-grid .panel video,
+.media-grid .panel > *:not(.panel-head) img {
+  width: 100%;
+  max-height: 440px;
+  object-fit: contain;
+}
+
+.panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--panel-border);
+}
+
+.panel-head h3 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.badge-anon {
+  display: inline-block;
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: 11px;
+  background: rgba(88, 209, 120, 0.16);
+  color: var(--success);
+}
+
+#mapa-tienda {
+  height: 320px;
+  overflow: hidden;
+}
+
+#mapa-tienda > * {
+  height: 100%;
+}
+
+@media (max-width: 900px) {
+  .media-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 .eyebrow {

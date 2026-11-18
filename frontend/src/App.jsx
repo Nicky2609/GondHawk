@@ -5,14 +5,12 @@ import { Header } from './components/layout/Header';
 import { KpiStrip } from './components/kpis/KpiStrip';
 import { ZoneShelfPanel } from './components/zones/ZoneShelfPanel';
 import { HeatmapPanel } from './components/heatmap/HeatmapPanel';
+import { VideoPanel } from './components/video/VideoPanel';
+import { StoreMapPanel } from './components/storemap/StoreMapPanel';
 import { ZoneFunnelTable } from './components/funnel/ZoneFunnelTable';
 import { AlertsPanel } from './components/alerts/AlertsPanel';
-import { BarChart3, Boxes, ChartNoAxesCombined, Gauge, House, Map, ShieldCheck } from 'lucide-react';
-
-const SAFE_ENDPOINTS = {
-  analyze: 'http://localhost:8000/api/videos/analyze',
-  heatmap: 'http://localhost:8000/api/videos/heatmap',
-};
+import { ANALYSIS_DEFAULTS, DATA_SOURCES, buildAnalyzeUrl } from './config/dataConfig';
+import { BarChart3, Boxes, ChartNoAxesCombined, Gauge, House, Map, MapPin, ShieldCheck, Video } from 'lucide-react';
 
 export default function App() {
   const { data, status, error, updateFromAnalysis, resetData } = useDashboardData();
@@ -25,6 +23,9 @@ export default function App() {
   const fileInputRef = useRef(null);
   const timerRef = useRef(null);
   const [activeSection, setActiveSection] = useState('cargar');
+  const [frameSkip, setFrameSkip] = useState(ANALYSIS_DEFAULTS.frameSkip);
+  const [videoTime, setVideoTime] = useState(0);
+  const inicializadoRef = useRef(false);
 
   useEffect(() => {
     return () => {
@@ -33,7 +34,32 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    const sectionIds = ['cargar', 'mapa-calor', 'estado-gondola', 'embudo-gondola', 'recomendaciones'];
+    if (inicializadoRef.current) return;
+    inicializadoRef.current = true;
+    let vigente = true;
+    (async () => {
+      try {
+        const res = await fetch(`${DATA_SOURCES.historial}?limite=1`);
+        if (!res.ok || !vigente) return;
+        const lista = await res.json();
+        const ultimo = Array.isArray(lista?.analisis) ? lista.analisis[0] : null;
+        if (!ultimo?.id || !vigente) return;
+        const resDet = await fetch(DATA_SOURCES.analisis(ultimo.id));
+        if (!resDet.ok || !vigente) return;
+        const detalle = await resDet.json();
+        if (!vigente) return;
+        updateFromAnalysis({ ...(detalle.detalle ?? detalle), analisis_id: ultimo.id }, Date.now());
+      } catch {
+        // sin historial disponible al inicio
+      }
+    })();
+    return () => {
+      vigente = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    const sectionIds = ['cargar', 'video', 'mapa-calor', 'mapa-tienda', 'estado-gondola', 'embudo-gondola', 'recomendaciones'];
     const sections = sectionIds
       .map((id) => document.getElementById(id))
       .filter(Boolean);
@@ -76,6 +102,7 @@ export default function App() {
 
     setProcessing(true);
     setProgress(0);
+    setVideoTime(0);
     resetData();
     setLastResult(null);
     setAnalysisCompleted(false);
@@ -89,11 +116,13 @@ export default function App() {
       });
     }, 220);
 
+    let analysisSucceeded = false;
+
     try {
       const formData = new FormData();
       formData.append('file', selectedFile);
 
-      const response = await fetch(SAFE_ENDPOINTS.analyze, {
+      const response = await fetch(buildAnalyzeUrl({ zonasAuto: false, frameSkip }), {
         method: 'POST',
         body: formData,
       });
@@ -114,28 +143,30 @@ export default function App() {
         throw new Error(detail);
       }
 
+      analysisSucceeded = true;
       setLastResult(payload);
       updateFromAnalysis(payload, Date.now());
       setAnalysisCompleted(true);
-      const realMessage = typeof payload?.message === 'string'
-        ? payload.message
-        : typeof payload?.status === 'string'
-          ? payload.status
+      const realMessage = typeof payload?.mensaje === 'string'
+        ? payload.mensaje
+        : typeof payload?.message === 'string'
+          ? payload.message
           : `Análisis completado para ${selectedFile.name}.`;
       setAnalysisMessage(realMessage);
     } catch (err) {
       const realError = err instanceof Error ? err.message : 'No se pudo completar la solicitud.';
-      setLastResult((prev) => prev ?? { mensaje: realError });
+      setLastResult({ mensaje: realError });
       setAnalysisMessage(realError);
     } finally {
       if (timerRef.current) clearInterval(timerRef.current);
-      setProgress(100);
-      setTimeout(() => setProcessing(false), 500);
+      setProgress(analysisSucceeded ? 100 : 0);
+      setProcessing(false);
     }
   };
 
   const handleClearInformation = () => {
     if (timerRef.current) clearInterval(timerRef.current);
+    setVideoTime(0);
     resetData();
     setSelectedFile(null);
     setProcessing(false);
@@ -152,7 +183,9 @@ export default function App() {
         <div className="brand"><span className="brand-mark"><Gauge size={16} /></span><p className="brand-name">GondHawk<span>Funcionalidades</span></p></div>
         <nav className="nav-list" aria-label="Navegación principal">
           <a className={`nav-item ${activeSection === 'cargar' ? 'active' : ''}`} href="#cargar"><House size={14} />Cargar video</a>
+          <a className={`nav-item ${activeSection === 'video' ? 'active' : ''}`} href="#video"><Video size={14} />Video y personas</a>
           <a className={`nav-item ${activeSection === 'mapa-calor' ? 'active' : ''}`} href="#mapa-calor"><Map size={14} />Mapa de calor</a>
+          <a className={`nav-item ${activeSection === 'mapa-tienda' ? 'active' : ''}`} href="#mapa-tienda"><MapPin size={14} />Mapa de seguimiento</a>
           <a className={`nav-item ${activeSection === 'estado-gondola' ? 'active' : ''}`} href="#estado-gondola"><ChartNoAxesCombined size={14} />Estado por góndola</a>
           <a className={`nav-item ${activeSection === 'embudo-gondola' ? 'active' : ''}`} href="#embudo-gondola"><Boxes size={14} />Embudo por góndola</a>
           <a className={`nav-item ${activeSection === 'recomendaciones' ? 'active' : ''}`} href="#recomendaciones"><BarChart3 size={14} />Recomendaciones</a>
@@ -192,6 +225,24 @@ export default function App() {
               </div>
             </div>
 
+            <div className="analysis-options">
+              <label className="analysis-option">
+                <span>
+                  Frames analizados
+                  <small>Saltar frames acelera el análisis del video.</small>
+                </span>
+                <select
+                  value={frameSkip}
+                  disabled={processing}
+                  onChange={(event) => setFrameSkip(Number(event.target.value))}
+                >
+                  <option value={1}>Todos (mejor precisión)</option>
+                  <option value={2}>1 de cada 2 (recomendado)</option>
+                  <option value={3}>1 de cada 3 (más rápido)</option>
+                </select>
+              </label>
+            </div>
+
             <div className="file-status">
               <div className="min-w-0"><p className="eyebrow">Archivo seleccionado</p><p className="mt-1 truncate text-sm text-[var(--ink)]">
                 {selectedFile ? selectedFile.name : 'Sin archivo seleccionado'}
@@ -216,16 +267,41 @@ export default function App() {
 
             {lastResult && (
               <div className="result-message">
-                {lastResult.message ?? lastResult.detail ?? lastResult.mensaje ?? 'El backend no devolvió un mensaje.'}
+                {lastResult.mensaje ?? lastResult.detail ?? lastResult.message ?? 'Análisis completado.'}
               </div>
             )}
           </section>
 
           <KpiStrip resumen={resumen} />
 
-          <div id="mapa-calor" className="dashboard-zone">
-            <HeatmapPanel heatmapUrl={currentData.heatmapUrl} />
+          <div className="media-grid">
+            <section id="video" className="panel dashboard-zone">
+              <div className="panel-head">
+                <h3>Video e identificación</h3>
+                <span className="badge-anon">Anonimizado</span>
+              </div>
+              <VideoPanel
+                videoUrl={currentData.videoAnotadoUrl}
+                zonasUrl={currentData.zonasPropuestasUrl}
+                embebido
+                onTimeUpdate={setVideoTime}
+              />
+            </section>
+
+            <section id="mapa-calor" className="panel dashboard-zone">
+              <div className="panel-head"><h3>Mapa de calor de flujo</h3></div>
+              <HeatmapPanel heatmapUrl={currentData.heatmapUrl} />
+            </section>
           </div>
+
+          <section id="mapa-tienda" className="panel dashboard-zone">
+            <StoreMapPanel
+              zonasData={currentData.zonasPropuestas}
+              conteoZonas={currentData.conteoZonas}
+              tracking={currentData.tracking}
+              currentTimeSec={videoTime}
+            />
+          </section>
 
           <div id="estado-gondola" className="dashboard-zone">
             <ZoneShelfPanel zonasGondola={currentData.zonasGondola} />

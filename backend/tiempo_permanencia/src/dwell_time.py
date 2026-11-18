@@ -99,10 +99,12 @@ class DwellTimeAnalyzer:
 
         # Convertir vértices a arrays de numpy para cv2.pointPolygonTest
         self.zone_polygons: dict[str, np.ndarray] = {}
+        self.zone_bboxes: dict[str, tuple[float, float, float, float]] = {}
         for zone_id, zone_data in zones.items():
             self.zone_polygons[zone_id] = self._validar_vertices(
                 zone_id, zone_data
             )
+        self._reconstruir_bboxes()
 
         # Estado: {(track_id, zone_id): entry_timestamp_ms}
         self.active: dict[tuple[str, str], float] = {}
@@ -110,6 +112,19 @@ class DwellTimeAnalyzer:
 
         # Eventos de dwell generados
         self.events: list[dict[str, Any]] = []
+
+    def _reconstruir_bboxes(self) -> None:
+        """Precalcula el rectángulo envolvente de cada polígono para descartar rápido."""
+        self.zone_bboxes = {}
+        for zone_id, polygon in self.zone_polygons.items():
+            xs = polygon[:, 0]
+            ys = polygon[:, 1]
+            self.zone_bboxes[zone_id] = (
+                float(xs.min()),
+                float(ys.min()),
+                float(xs.max()),
+                float(ys.max()),
+            )
 
     @staticmethod
     def _validar_vertices(
@@ -158,7 +173,7 @@ class DwellTimeAnalyzer:
 
     def _get_zone_for_point(self, point: np.ndarray) -> str | None:
         """
-        Determina en qué zona está un punto usando cv2.pointPolygonTest.
+        Determina en qué zona está un punto usando bbox + cv2.pointPolygonTest.
 
         Args:
             point: array [x, y]
@@ -166,8 +181,15 @@ class DwellTimeAnalyzer:
         Returns:
             zone_id o None si está fuera de todas las zonas
         """
-        pt = (float(point[0]), float(point[1]))
+        px = float(point[0])
+        py = float(point[1])
+        pt = (px, py)
         for zone_id, polygon in self.zone_polygons.items():
+            bbox = self.zone_bboxes.get(zone_id)
+            if bbox is not None:
+                x1, y1, x2, y2 = bbox
+                if px < x1 or px > x2 or py < y1 or py > y2:
+                    continue
             result = cv2.pointPolygonTest(polygon, pt, False)
             if result >= 0:  # dentro o en el borde
                 return zone_id

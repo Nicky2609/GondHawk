@@ -1,0 +1,44 @@
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: gondhawk-backend
+    ports:
+      - "8000:8000"
+    env_file:
+      - path: ./backend/.env
+        required: false
+    environment:
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      - SUPABASE_URL=${SUPABASE_URL:-}
+      - SUPABASE_SERVICE_KEY=${SUPABASE_SERVICE_KEY:-}
+      - SUPABASE_BUCKET=${SUPABASE_BUCKET:-gondhawk}
+      - GONDHAWK_TIENDA_ID=${GONDHAWK_TIENDA_ID:-}
+      - GONDHAWK_CAMARA_ID=${GONDHAWK_CAMARA_ID:-}
+    volumes:
+      - gondhawk_output:/app/backend/pipeline/output
+      - gondhawk_uploads:/app/backend/pipeline/uploads
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health')"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: gondhawk-frontend
+    ports:
+      - "5173:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  gondhawk_output:
+  gondhawk_uploads:

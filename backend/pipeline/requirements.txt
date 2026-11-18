@@ -4,6 +4,7 @@
 
 # Detección de personas + Tracking (Módulos 2 y 3 — Samuel y Juan)
 ultralytics>=8.4.0
+lap>=0.5.12
 
 # Procesamiento de imagen y video
 opencv-python>=4.8.0
