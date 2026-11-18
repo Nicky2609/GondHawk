@@ -8,6 +8,64 @@
 - Dependencias Python instaladas en `.venv`
 - Dependencias JavaScript instaladas en `frontend/node_modules`
 
+## Ejecución rápida con Docker
+
+### Archivos de contenedorización
+
+- `.dockerignore`: excluye `node_modules`, `.venv`, `dataset_sintetico` y salidas pesadas del contexto Docker.
+- `backend/Dockerfile`: construye el API FastAPI sobre `python:3.11-slim` con PyTorch CPU, OpenCV, FFmpeg y Ultralytics.
+- `frontend/Dockerfile`: compila Vite React con `node:20-alpine` y sirve el build en `nginx:alpine`.
+- `frontend/nginx.conf`: enruta la aplicación SPA en el puerto 80 del contenedor.
+- `frontend/.dockerignore`: excluye `node_modules` y `dist` del contexto frontend.
+- `docker-compose.yml`: orquesta `backend` y `frontend` con volúmenes persistentes y healthcheck.
+
+### Requisitos
+
+- Docker Desktop o Docker Engine con Docker Compose v2.
+
+### Levantar los contenedores
+
+Ejecuta el comando en la raíz del repositorio:
+
+```powershell
+docker compose up --build -d
+```
+
+Verifica el estado de los contenedores:
+
+```powershell
+docker compose ps
+```
+
+Consulta los logs en tiempo real:
+
+```powershell
+docker compose logs -f
+```
+
+Accede a los servicios en las rutas locales:
+
+```text
+Frontend: http://localhost:5173
+Backend API: http://localhost:8000
+Documentación OpenAPI: http://localhost:8000/docs
+Salud del API: http://localhost:8000/health
+```
+
+Detén los contenedores sin borrar los datos generados:
+
+```powershell
+docker compose down
+```
+
+### Variables opcionales y persistencia
+
+- Crea `backend/.env` o define variables de entorno antes de ejecutar `docker compose up`.
+- Variables admitidas: `ANTHROPIC_API_KEY`, `SUPABASE_URL`, `SUPABASE_SERVICE_KEY`, `SUPABASE_BUCKET`, `GONDHAWK_TIENDA_ID` y `GONDHAWK_CAMARA_ID`.
+- Sin credenciales externas, el contenedor guarda resultados en los volúmenes `gondhawk_output` y `gondhawk_uploads`.
+- El `backend/Dockerfile` enlaza `runs/detect/train/weights/best.pt` a `last.pt` cuando `last.pt` no existe en el repositorio.
+- Para compilar con soporte CUDA, ejecuta el build del backend pasando `--build-arg TORCH_INDEX_URL=https://download.pytorch.org/whl/cu124`.
+
 ## Levantar el backend
 
 Desde la raíz del proyecto:
@@ -162,62 +220,4 @@ Para probar el endpoint con un video:
 ```powershell
 curl.exe -F "file=@C:\ruta\al\video.mp4" http://localhost:8000/api/videos/analyze
 ```
-
-## Ejecución rápida con Docker
-
-### Archivos de contenedorización
-
-- `.dockerignore`: excluye `node_modules`, `.venv`, `dataset_sintetico` y salidas pesadas del contexto Docker.
-- `backend/Dockerfile`: construye el API FastAPI sobre `python:3.11-slim` con PyTorch CPU, OpenCV, FFmpeg y Ultralytics.
-- `frontend/Dockerfile`: compila Vite React con `node:20-alpine` y sirve el build en `nginx:alpine`.
-- `frontend/nginx.conf`: enruta la aplicación SPA en el puerto 80 del contenedor.
-- `frontend/.dockerignore`: excluye `node_modules` y `dist` del contexto frontend.
-- `docker-compose.yml`: orquesta `backend` y `frontend` con volúmenes persistentes y healthcheck.
-
-### Requisitos
-
-- Docker Desktop o Docker Engine con Docker Compose v2.
-
-### Levantar los contenedores
-
-Ejecuta el comando en la raíz del repositorio:
-
-```powershell
-docker compose up --build -d
-```
-
-Verifica el estado de los contenedores:
-
-```powershell
-docker compose ps
-```
-
-Consulta los logs en tiempo real:
-
-```powershell
-docker compose logs -f
-```
-
-Accede a los servicios en las rutas locales:
-
-```text
-Frontend: http://localhost:5173
-Backend API: http://localhost:8000
-Documentación OpenAPI: http://localhost:8000/docs
-Salud del API: http://localhost:8000/health
-```
-
-Detén los contenedores sin borrar los datos generados:
-
-```powershell
-docker compose down
-```
-
-### Variables opcionales y persistencia
-
-- Crea `backend/.env` o define variables de entorno antes de ejecutar `docker compose up`.
-- Variables admitidas: `ANTHROPIC_API_KEY`, `SUPABASE_URL`, `SUPABASE_SERVICE_KEY`, `SUPABASE_BUCKET`, `GONDHAWK_TIENDA_ID` y `GONDHAWK_CAMARA_ID`.
-- Sin credenciales externas, el contenedor guarda resultados en los volúmenes `gondhawk_output` y `gondhawk_uploads`.
-- El `backend/Dockerfile` enlaza `runs/detect/train/weights/best.pt` a `last.pt` cuando `last.pt` no existe en el repositorio.
-- Para compilar con soporte CUDA, ejecuta el build del backend pasando `--build-arg TORCH_INDEX_URL=https://download.pytorch.org/whl/cu124`.
 
