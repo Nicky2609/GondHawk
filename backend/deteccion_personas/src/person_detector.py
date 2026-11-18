@@ -58,12 +58,12 @@ PERFILES = {
     "sintetico": {
     "conf": 0.35,
     "iou": 0.45,
-    "imgsz": 960,
+    "imgsz": 720,
     "model": str(_MODELO_SINTETICO),
 },
     # Para diagnosticar: acepta casi todo. Sirve para saber si el detector
     # "ve" algo o no ve nada, no para producir metricas.
-    "permisivo": {"conf": 0.10, "iou": 0.45, "imgsz": 960},
+    "permisivo": {"conf": 0.10, "iou": 0.45, "imgsz": 720},
 }
 
 
