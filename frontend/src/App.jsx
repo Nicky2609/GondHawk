@@ -59,17 +59,24 @@ export default function App() {
     };
   }, []);
 
-  const currentData = useMemo(() => {
-    if (!data) return null;
-    return {
-      ...data,
-      totalGlobal: data.totalGlobal ?? { visitas: 0, tasa_interaccion: 0, tasa_rechazo: 0 },
-      zonasGondola: data.zonasGondola ?? [],
-      alertas: data.alertas ?? [],
-    };
-  }, [data]);
+  // Mantiene una estructura estable incluso antes del primer análisis.
+  // Así los paneles reciben valores seguros y no dependen de comprobaciones
+  // repetidas en cada componente.
+  const currentData = useMemo(() => ({
+    ...(data ?? {}),
+    totalGlobal: data?.totalGlobal ?? {
+      visitas: 0,
+      tasa_interaccion: 0,
+      tasa_rechazo: 0,
+    },
+    zonasGondola: data?.zonasGondola ?? [],
+    alertas: data?.alertas ?? [],
+  }), [data]);
 
-  const resumen = resumenGlobal(currentData.totalGlobal, currentData.zonasGondola);
+  const resumen = useMemo(
+    () => resumenGlobal(currentData.totalGlobal, currentData.zonasGondola),
+    [currentData.totalGlobal, currentData.zonasGondola],
+  );
 
   if (!introDone) {
     return <HomeIntro onEnter={() => setIntroDone(true)} />;
@@ -86,15 +93,20 @@ export default function App() {
     resetData();
     setLastResult(null);
     setAnalysisCompleted(false);
+    setRecomendaciones(null);
+    setFuenteReco(null);
     setAnalysisMessage(`Analizando ${selectedFile.name}...`);
 
     if (timerRef.current) clearInterval(timerRef.current);
     timerRef.current = setInterval(() => {
       setProgress((prev) => {
-        const next = prev + 12;
-        return next >= 100 ? 100 : next;
+        // Es un indicador orientativo: el backend no expone progreso real.
+        // Se reserva el 100 % para cuando termina la petición.
+        return Math.min(prev + 8, 90);
       });
     }, 220);
+
+    let analysisSucceeded = false;
 
     try {
       const formData = new FormData();
@@ -121,6 +133,7 @@ export default function App() {
         throw new Error(detail);
       }
 
+      analysisSucceeded = true;
       setLastResult(payload);
       updateFromAnalysis(payload, Date.now());
       setAnalysisCompleted(true);
@@ -148,13 +161,29 @@ export default function App() {
       setAnalysisMessage(realMessage);
     } catch (err) {
       const realError = err instanceof Error ? err.message : 'No se pudo completar la solicitud.';
-      setLastResult((prev) => prev ?? { mensaje: realError });
+      setLastResult({ mensaje: realError });
       setAnalysisMessage(realError);
     } finally {
       if (timerRef.current) clearInterval(timerRef.current);
-      setProgress(100);
-      setTimeout(() => setProcessing(false), 500);
+      setProgress(analysisSucceeded ? 100 : 0);
+      setProcessing(false);
     }
+  };
+
+  const handleTabKeyDown = (event, currentTab) => {
+    const currentIndex = TABS.findIndex((item) => item.id === currentTab);
+    let nextIndex = currentIndex;
+
+    if (event.key === 'ArrowRight') nextIndex = (currentIndex + 1) % TABS.length;
+    else if (event.key === 'ArrowLeft') nextIndex = (currentIndex - 1 + TABS.length) % TABS.length;
+    else if (event.key === 'Home') nextIndex = 0;
+    else if (event.key === 'End') nextIndex = TABS.length - 1;
+    else return;
+
+    event.preventDefault();
+    const nextTab = TABS[nextIndex];
+    setTab(nextTab.id);
+    document.getElementById(`tab-${nextTab.id}`)?.focus();
   };
 
   const handleClearInformation = () => {
@@ -225,13 +254,24 @@ export default function App() {
         </div>
 
         <div className="content-stack" hidden={vista !== 'tablero'}>
-          <nav className="tab-bar" aria-label="Secciones del tablero">
+          <nav
+            className="tab-bar"
+            aria-label="Secciones del tablero"
+            role="tablist"
+            aria-orientation="horizontal"
+          >
             {TABS.map((t) => (
               <button
                 key={t.id}
+                id={`tab-${t.id}`}
                 type="button"
+                role="tab"
+                aria-selected={tab === t.id}
+                aria-controls={`panel-${t.id}`}
+                tabIndex={tab === t.id ? 0 : -1}
                 className={`tab-button ${tab === t.id ? 'active' : ''}`}
                 onClick={() => setTab(t.id)}
+                onKeyDown={(event) => handleTabKeyDown(event, t.id)}
               >
                 {t.label}
               </button>
@@ -242,7 +282,7 @@ export default function App() {
               la vista tablero/escena 3D): así el video no se reinicia ni el
               historial se vuelve a pedir al cambiar de pestaña. */}
           <div className="tab-frame">
-            <div className="tab-panel" hidden={tab !== 'cargar'}>
+            <div id="panel-cargar" className="tab-panel" role="tabpanel" aria-labelledby="tab-cargar" hidden={tab !== 'cargar'}>
               <section id="cargar" className="analysis-card">
                 <div className="analysis-card-head">
                   <div><p className="eyebrow">Análisis de video</p><h2>Carga y procesamiento del flujo</h2><p className="muted">Selecciona un archivo para generar las métricas de esta sesión.</p></div>
@@ -257,7 +297,16 @@ export default function App() {
                             type="file"
                             accept="video/*"
                             className="hidden"
-                            onChange={(event) => setSelectedFile(event.target.files?.[0] ?? null)}
+                            disabled={processing}
+                            aria-label="Seleccionar archivo de video"
+                            onChange={(event) => {
+                              const file = event.target.files?.[0] ?? null;
+                              setSelectedFile(file);
+                              if (file) {
+                                setLastResult(null);
+                                setAnalysisMessage(`Archivo listo para analizar: ${file.name}`);
+                              }
+                            }}
                           />
                           {selectedFile ? 'Cambiar video' : 'Seleccionar video'}
                         </label>
@@ -274,6 +323,7 @@ export default function App() {
                     <input
                       type="checkbox"
                       checked={zonasAuto}
+                      disabled={processing}
                       onChange={(event) => setZonasAuto(event.target.checked)}
                     />
                     <span>
@@ -286,7 +336,11 @@ export default function App() {
                       Frames analizados
                       <small>Saltar frames acelera el análisis pero fragmenta el seguimiento.</small>
                     </span>
-                    <select value={frameSkip} onChange={(event) => setFrameSkip(Number(event.target.value))}>
+                    <select
+                      value={frameSkip}
+                      disabled={processing}
+                      onChange={(event) => setFrameSkip(Number(event.target.value))}
+                    >
                       <option value={1}>Todos (mejor precisión)</option>
                       <option value={2}>1 de cada 2</option>
                       <option value={3}>1 de cada 3 (más rápido)</option>
@@ -294,30 +348,57 @@ export default function App() {
                   </label>
                 </div>
 
-                <div className="file-status">
+                <div className="file-status" aria-live="polite" aria-busy={processing}>
                   <div className="min-w-0"><p className="eyebrow">Archivo seleccionado</p><p className="mt-1 truncate text-base text-[var(--ink)]">
                     {selectedFile ? selectedFile.name : 'Sin archivo seleccionado'}
                   </p></div>
 
-                  <div className="progress-wrap"><div className="progress-ring"><svg viewBox="0 0 100 100">
-                    <circle cx="50" cy="50" r="42" stroke="rgba(62,46,34,0.15)" strokeWidth="10" fill="none" />
-                    <circle
-                      cx="50"
-                      cy="50"
-                      r="42"
-                      stroke="var(--accent)"
-                      strokeWidth="10"
-                      strokeLinecap="round"
-                      fill="none"
-                      strokeDasharray={264}
-                      strokeDashoffset={264 - (264 * progress) / 100}
-                      style={{ transition: 'stroke-dashoffset 0.25s ease' }}
-                    />
-                  </svg><span>{progress}%</span></div><div><p>{processing ? 'Procesando video' : 'Listo para analizar'}</p><p>{analysisMessage}</p></div></div>
+                  <div className="progress-wrap">
+                    <div
+                      className="progress-ring"
+                      role="progressbar"
+                      aria-label="Progreso orientativo del análisis"
+                      aria-valuemin={0}
+                      aria-valuemax={100}
+                      aria-valuenow={progress}
+                    >
+                      <svg viewBox="0 0 100 100" aria-hidden="true">
+                        <circle
+                          cx="50"
+                          cy="50"
+                          r="42"
+                          stroke="rgba(62,46,34,0.15)"
+                          strokeWidth="10"
+                          fill="none"
+                        />
+                        <circle
+                          cx="50"
+                          cy="50"
+                          r="42"
+                          stroke="var(--accent)"
+                          strokeWidth="10"
+                          strokeLinecap="round"
+                          fill="none"
+                          strokeDasharray={264}
+                          strokeDashoffset={264 - (264 * progress) / 100}
+                          style={{ transition: 'stroke-dashoffset 0.25s ease' }}
+                        />
+                      </svg>
+                      <span>{progress}%</span>
+                    </div>
+                    <div>
+                      <p>{processing ? 'Procesando video' : 'Listo para analizar'}</p>
+                      <p>{analysisMessage}</p>
+                    </div>
+                  </div>
                 </div>
 
                 {lastResult && (
-                  <div className="result-message">
+                  <div
+                    className="result-message"
+                    role={analysisCompleted ? 'status' : 'alert'}
+                    aria-live="polite"
+                  >
                     {/* El backend siempre manda `mensaje`; se lee primero. Los
                         otros dos campos cubren errores de FastAPI (detail) y
                         respuestas antiguas. */}
@@ -337,7 +418,7 @@ export default function App() {
               </div>
             </div>
 
-            <div className="tab-panel" hidden={tab !== 'video'}>
+            <div id="panel-video" className="tab-panel" role="tabpanel" aria-labelledby="tab-video" hidden={tab !== 'video'}>
               <div className="tab-row tab-row-2">
                 <section id="video" className="panel">
                   <div className="panel-head">
@@ -370,7 +451,7 @@ export default function App() {
               </div>
             </div>
 
-            <div className="tab-panel" hidden={tab !== 'rendimiento'}>
+            <div id="panel-rendimiento" className="tab-panel" role="tabpanel" aria-labelledby="tab-rendimiento" hidden={tab !== 'rendimiento'}>
               <div className="tab-row tab-row-2-wide" id="estado-gondola">
                 <FunnelPanel
                   total={currentData.totalGlobal}
@@ -400,7 +481,7 @@ export default function App() {
               </div>
             </div>
 
-            <div className="tab-panel" hidden={tab !== 'detalle'}>
+            <div id="panel-detalle" className="tab-panel" role="tabpanel" aria-labelledby="tab-detalle" hidden={tab !== 'detalle'}>
               <div className="tab-row tab-row-2" id="embudo-gondola">
                 <section className="panel">
                   <div className="panel-head"><h3>Detalle por góndola</h3></div>
@@ -425,7 +506,7 @@ export default function App() {
               </div>
             </div>
 
-            <div className="tab-panel" hidden={tab !== 'historial'}>
+            <div id="panel-historial" className="tab-panel" role="tabpanel" aria-labelledby="tab-historial" hidden={tab !== 'historial'}>
               <div className="tab-row tab-row-1">
                 <HistoryPanel
                   recargar={historialKey}
