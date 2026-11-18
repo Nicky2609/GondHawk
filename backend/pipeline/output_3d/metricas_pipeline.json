@@ -1,0 +1,54 @@
+{
+  "pipeline": "GondHawk — Integrante 6 (Laura)",
+  "video_fuente": "pipeline/uploads/t3d_v3.mp4",
+  "frames_procesados": 1350,
+  "tiempo_procesamiento_seg": 103.67,
+  "total_detecciones": 1896,
+  "eventos_generados": 24,
+  "eventos_compliance": 24,
+  "embudo_global": {
+    "visitas": 24,
+    "se_detiene": 3,
+    "toma_producto": 0,
+    "devuelve": 0,
+    "tasa_interaccion": 0.0,
+    "tasa_rechazo": 0.0
+  },
+  "alertas": [
+    {
+      "zone_id": "gondola_A1",
+      "tipo": "zona_fria",
+      "mensaje": "10 visitas y solo 0 interacciones: hay trafico pero el producto no engancha."
+    },
+    {
+      "zone_id": "gondola_A1",
+      "tipo": "trafico_sin_parada",
+      "mensaje": "La gente pasa pero no se detiene: candidata a cambio de planograma o material visual."
+    },
+    {
+      "zone_id": "gondola_A2",
+      "tipo": "zona_fria",
+      "mensaje": "4 visitas y solo 0 interacciones: hay trafico pero el producto no engancha."
+    },
+    {
+      "zone_id": "gondola_A3",
+      "tipo": "zona_fria",
+      "mensaje": "10 visitas y solo 0 interacciones: hay trafico pero el producto no engancha."
+    },
+    {
+      "zone_id": "gondola_A3",
+      "tipo": "trafico_sin_parada",
+      "mensaje": "La gente pasa pero no se detiene: candidata a cambio de planograma o material visual."
+    }
+  ],
+  "salidas": {
+    "detecciones": "pipeline\\output_3d\\detecciones.jsonl",
+    "tracking": "pipeline\\output_3d\\tracking.jsonl",
+    "dwell_time": "pipeline\\output_3d\\dwell_time.jsonl",
+    "eventos_interaccion": "pipeline\\output_3d\\eventos_interaccion.jsonl",
+    "eventos_compliance": "pipeline\\output_3d\\eventos_compliance.jsonl",
+    "metricas_interaccion": "pipeline\\output_3d\\metricas_interaccion.json",
+    "heatmap": "pipeline\\output_3d\\heatmap.png",
+    "conteo_zonas": "pipeline\\output_3d\\conteo_zonas.json"
+  }
+}

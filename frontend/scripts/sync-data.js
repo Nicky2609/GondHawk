@@ -2,7 +2,7 @@ import { copyFileSync, mkdirSync, existsSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 
 const ROOT = process.cwd();
-const ORIGEN = resolve(ROOT, '..', 'backend', 'GondHawk', 'pipeline', 'output');
+const ORIGEN = resolve(ROOT, '..', 'backend', 'pipeline', 'output');
 const DESTINO = resolve(ROOT, 'public', 'data');
 const ARCHIVOS = [
   'metricas_interaccion.json',
@@ -19,6 +19,6 @@ for (const archivo of ARCHIVOS) {
     copyFileSync(origen, join(DESTINO, archivo));
     console.log(`copiado ${archivo}`);
   } else {
-    console.warn(`falta ${archivo} — ¿ya corrió el pipeline en backend/GondHawk/?`);
+    console.warn(`falta ${archivo} — ¿ya corrió el pipeline en backend/pipeline/?`);
   }
 }

@@ -1,0 +1,35 @@
+{
+  "resumen_maquina": {
+    "frames_procesados": 1350,
+    "episodios": 41,
+    "eventos_por_tipo": {
+      "approach": 40,
+      "pickup": 8,
+      "return": 3,
+      "takeaway": 5,
+      "pass_by": 1
+    },
+    "alcances_descartados": 0,
+    "detector_alcance": "geometrico"
+  },
+  "eventos_canonicos": 57,
+  "eventos_compliance": 52,
+  "eventos_internos_no_exportados": 5,
+  "zonas_cargadas": [
+    "gondola_A1",
+    "gondola_A2",
+    "gondola_A3",
+    "pasillo_central"
+  ],
+  "gondolas": [
+    "gondola_A1",
+    "gondola_A2",
+    "gondola_A3"
+  ],
+  "dwell_modulo5": {
+    "registros": 0,
+    "eventos_cruzados": 0,
+    "sin_cruce": 57
+  },
+  "alcances_descartados": []
+}

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useState } from 'react';
 
 /**
  * Reproductor del video anotado: detección, tracking y rostros difuminados.
@@ -11,35 +11,6 @@ import { useEffect, useRef, useState } from 'react';
  */
 export function VideoPanel({ videoUrl, zonasUrl, embebido = false, onTimeUpdate }) {
   const [vista, setVista] = useState('video');
-  const [errorUrl, setErrorUrl] = useState(null);
-  const videoRef = useRef(null);
-  const rafRef = useRef(null);
-
-  const errorVideo = Boolean(videoUrl && errorUrl === videoUrl);
-  const vistaActiva = vista === 'zonas' && zonasUrl ? 'zonas' : 'video';
-
-  const detenerSync = () => {
-    if (rafRef.current !== null) {
-      cancelAnimationFrame(rafRef.current);
-      rafRef.current = null;
-    }
-  };
-
-  const iniciarSync = () => {
-    detenerSync();
-    const tick = () => {
-      const el = videoRef.current;
-      if (!el || el.paused || el.ended) {
-        rafRef.current = null;
-        return;
-      }
-      onTimeUpdate?.(el.currentTime);
-      rafRef.current = requestAnimationFrame(tick);
-    };
-    rafRef.current = requestAnimationFrame(tick);
-  };
-
-  useEffect(() => detenerSync, []);
 
   if (!videoUrl && !zonasUrl) {
     return (
@@ -56,7 +27,7 @@ export function VideoPanel({ videoUrl, zonasUrl, embebido = false, onTimeUpdate 
           <button
             type="button"
             onClick={() => setVista('video')}
-            className={`rounded-lg px-3 py-1.5 text-sm ${vistaActiva === 'video' ? 'bg-[var(--accent)] text-white' : 'text-[var(--ink-muted)]'}`}
+            className={`rounded-lg px-3 py-1.5 text-sm ${vista === 'video' ? 'bg-[var(--accent)] text-white' : 'text-[var(--ink-muted)]'}`}
           >
             Detección y seguimiento
           </button>
@@ -64,7 +35,7 @@ export function VideoPanel({ videoUrl, zonasUrl, embebido = false, onTimeUpdate 
             <button
               type="button"
               onClick={() => setVista('zonas')}
-              className={`rounded-lg px-3 py-1.5 text-sm ${vistaActiva === 'zonas' ? 'bg-[var(--accent)] text-white' : 'text-[var(--ink-muted)]'}`}
+              className={`rounded-lg px-3 py-1.5 text-sm ${vista === 'zonas' ? 'bg-[var(--accent)] text-white' : 'text-[var(--ink-muted)]'}`}
             >
               Zonas detectadas
             </button>
@@ -72,42 +43,19 @@ export function VideoPanel({ videoUrl, zonasUrl, embebido = false, onTimeUpdate 
         </div>
       </div>
 
-      {vistaActiva === 'video' ? (
-        videoUrl && !errorVideo ? (
-          <video
-            key={videoUrl}
-            ref={videoRef}
-            src={videoUrl}
-            controls
-            playsInline
-            className="w-full bg-black"
-            preload="metadata"
-            onLoadedMetadata={(e) => onTimeUpdate?.(e.currentTarget.currentTime)}
-            onPlay={iniciarSync}
-            onPause={detenerSync}
-            onEnded={(e) => {
-              detenerSync();
-              onTimeUpdate?.(e.currentTarget.currentTime);
-            }}
-            onSeeked={(e) => onTimeUpdate?.(e.currentTarget.currentTime)}
-            onTimeUpdate={(e) => onTimeUpdate?.(e.currentTarget.currentTime)}
-            onError={() => {
-              detenerSync();
-              setErrorUrl(videoUrl);
-            }}
-          >
-            Tu navegador no puede reproducir este video.
-          </video>
-        ) : (
-          <div className="p-6 text-sm text-[var(--ink-muted)]">
-            {videoUrl
-              ? 'No se pudo reproducir el video de este análisis. Verifica que el archivo esté codificado en H.264 o vuelve a analizar el video.'
-              : 'Este análisis no tiene video guardado.'}
-          </div>
-        )
+      {vista === 'video' && videoUrl ? (
+        <video
+          src={videoUrl}
+          controls
+          className="w-full bg-black"
+          preload="metadata"
+          onTimeUpdate={(e) => onTimeUpdate?.(e.currentTarget.currentTime)}
+        >
+          Tu navegador no puede reproducir este video.
+        </video>
       ) : null}
 
-      {vistaActiva === 'zonas' && zonasUrl ? (
+      {vista === 'zonas' && zonasUrl ? (
         <div>
           <img src={zonasUrl} alt="Zonas detectadas sobre el video" className="w-full" />
           <p className="px-4 py-3 text-sm text-[var(--ink-muted)]">

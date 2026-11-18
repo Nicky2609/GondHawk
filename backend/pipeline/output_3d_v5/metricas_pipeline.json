@@ -1,0 +1,28 @@
+{
+  "pipeline": "GondHawk — Integrante 6 (Laura)",
+  "video_fuente": "pipeline/uploads/t3d_v3.mp4",
+  "frames_procesados": 1350,
+  "tiempo_procesamiento_seg": 84.63,
+  "total_detecciones": 2605,
+  "eventos_generados": 16,
+  "eventos_compliance": 14,
+  "embudo_global": {
+    "visitas": 12,
+    "se_detiene": 11,
+    "toma_producto": 2,
+    "devuelve": 0,
+    "tasa_interaccion": 0.1818,
+    "tasa_rechazo": 0.0
+  },
+  "alertas": [],
+  "salidas": {
+    "detecciones": "pipeline\\output_3d_v5\\detecciones.jsonl",
+    "tracking": "pipeline\\output_3d_v5\\tracking.jsonl",
+    "dwell_time": "pipeline\\output_3d_v5\\dwell_time.jsonl",
+    "eventos_interaccion": "pipeline\\output_3d_v5\\eventos_interaccion.jsonl",
+    "eventos_compliance": "pipeline\\output_3d_v5\\eventos_compliance.jsonl",
+    "metricas_interaccion": "pipeline\\output_3d_v5\\metricas_interaccion.json",
+    "heatmap": "pipeline\\output_3d_v5\\heatmap.png",
+    "conteo_zonas": "pipeline\\output_3d_v5\\conteo_zonas.json"
+  }
+}

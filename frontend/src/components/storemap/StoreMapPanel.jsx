@@ -54,7 +54,7 @@ function computeProjection(zones, mapWidth, mapHeight, frame = null, padding = 1
 
   const scaleX = (mapWidth - 2 * padding) / sourceWidth;
   const scaleY = (mapHeight - 2 * padding) / sourceHeight;
-  const scale = Math.max(1e-3, Math.min(scaleX, scaleY));
+  const scale = Math.min(scaleX, scaleY);
 
   const offsetX = padding + (mapWidth - 2 * padding - sourceWidth * scale) / 2 - minX * scale;
   const offsetY = padding + (mapHeight - 2 * padding - sourceHeight * scale) / 2 - minY * scale;
@@ -89,21 +89,7 @@ function transformToTopDown(zones, projection) {
 const PERSON_COLORS = ['#f97316', '#38bdf8', '#a78bfa', '#f43f5e', '#22d3ee', '#facc15', '#4ade80', '#fb7185'];
 
 function colorForPersonId(id) {
-  const num = Number(id);
-  if (Number.isFinite(num)) {
-    return PERSON_COLORS[Math.abs(Math.trunc(num)) % PERSON_COLORS.length];
-  }
-  const str = String(id ?? '');
-  let hash = 0;
-  for (let i = 0; i < str.length; i++) {
-    hash = (hash * 31 + str.charCodeAt(i)) >>> 0;
-  }
-  return PERSON_COLORS[hash % PERSON_COLORS.length];
-}
-
-function trackPersonId(track) {
-  const id = track?.person_id ?? track?.track_id;
-  return id === undefined || id === null ? null : id;
+  return PERSON_COLORS[Math.abs(id) % PERSON_COLORS.length];
 }
 
 function footPoint(bbox, projection) {
@@ -124,11 +110,9 @@ function buildTrails(frames, currentIndex, projection) {
     const frame = frames[i];
     if (frame.timestamp_ms < startTime) break;
     for (const track of frame.tracks || []) {
-      const pid = trackPersonId(track);
-      if (pid === null || !Array.isArray(track.bbox) || track.bbox.length !== 4) continue;
       const [px, py] = footPoint(track.bbox, projection);
-      if (!trails.has(pid)) trails.set(pid, []);
-      trails.get(pid).push({ x: px, y: py });
+      if (!trails.has(track.person_id)) trails.set(track.person_id, []);
+      trails.get(track.person_id).push({ x: px, y: py });
     }
   }
   for (const points of trails.values()) points.reverse();
@@ -143,11 +127,6 @@ function findClosestFrameIndex(frames, timeMs) {
     if (frames[mid].timestamp_ms < timeMs) lo = mid + 1;
     else hi = mid;
   }
-  if (lo > 0) {
-    const prevDiff = Math.abs(frames[lo - 1].timestamp_ms - timeMs);
-    const currDiff = Math.abs(frames[lo].timestamp_ms - timeMs);
-    if (prevDiff < currDiff) return lo - 1;
-  }
   return lo;
 }
 
@@ -158,26 +137,24 @@ function polygonToPath(polygon) {
 }
 
 export function StoreMapPanel({ zonasData, conteoZonas, tracking, currentTimeSec = 0 }) {
-
-  const svgWrapRef = useRef(null);
+  
+  const containerRef = useRef(null);
   const [mapSize, setMapSize] = useState({ width: 400, height: 250 });
-  const tieneZonas = Boolean(zonasData?.zonas?.length);
 
   useEffect(() => {
-    const el = svgWrapRef.current;
-    if (!el) return undefined;
     const resizeObserver = new ResizeObserver(entries => {
       for (const entry of entries) {
-        const w = Math.round(entry.contentRect.width) - 16;
-        const h = Math.round(entry.contentRect.height) - 16;
-        // Ignora mediciones en pestaña oculta (0x0) para no colapsar el SVG.
-        if (w <= 64 || h <= 60) continue;
-        setMapSize(prev => (prev.width === w && prev.height === h ? prev : { width: w, height: h }));
+        const { width, height } = entry.contentRect;
+        // 34 px de cabecera + 16 px de padding vertical del contenedor.
+        setMapSize({
+          width: Math.max(1, width - 32),
+          height: Math.max(1, height - 50),
+        });
       }
     });
-    resizeObserver.observe(el);
+    if (containerRef.current) resizeObserver.observe(containerRef.current);
     return () => resizeObserver.disconnect();
-  }, [tieneZonas]);
+  }, []);
 
   const mergedZones = useMemo(() => {
     if (!zonasData?.zonas) return [];
@@ -218,14 +195,10 @@ export function StoreMapPanel({ zonasData, conteoZonas, tracking, currentTimeSec
 
   const livePeople = useMemo(() => {
     if (!currentFrame || !projection) return [];
-    const out = [];
-    for (const track of currentFrame.tracks || []) {
-      const pid = trackPersonId(track);
-      if (pid === null || !Array.isArray(track.bbox) || track.bbox.length !== 4) continue;
+    return (currentFrame.tracks || []).map(track => {
       const [px, py] = footPoint(track.bbox, projection);
-      out.push({ id: pid, x: px, y: py });
-    }
-    return out;
+      return { id: track.person_id, x: px, y: py };
+    });
   }, [currentFrame, projection]);
 
   const trails = useMemo(() => {
@@ -235,7 +208,7 @@ export function StoreMapPanel({ zonasData, conteoZonas, tracking, currentTimeSec
 
   if (!hasData) {
     return (
-      <div className="flex flex-col overflow-hidden rounded-2xl border border-[var(--panel-border)] bg-[var(--panel)]" style={{ height: '320px' }}>
+      <div ref={containerRef} className="rounded-2xl border border-[var(--panel-border)] bg-[var(--panel)]" style={{ height: '250px' }}>
         <div className="flex items-center justify-center h-full text-sm text-[var(--ink-muted)]">
           Sin datos de zonas disponibles
         </div>
@@ -246,14 +219,14 @@ export function StoreMapPanel({ zonasData, conteoZonas, tracking, currentTimeSec
   const totalVisits = transformedZones.reduce((sum, z) => sum + (z.visits || 0), 0);
 
   return (
-    <div className="flex flex-col overflow-hidden rounded-2xl border border-[var(--panel-border)] bg-[var(--panel)] relative" style={{ height: '320px' }}>
-      <div className="flex shrink-0 items-center justify-between gap-2 border-b border-[var(--panel-border)] px-3 py-1.5">
+    <div ref={containerRef} className="rounded-2xl border border-[var(--panel-border)] bg-[var(--panel)] relative" style={{ height: '250px' }}>
+      <div className="flex items-center justify-between gap-2 border-b border-[var(--panel-border)] px-3 py-1.5">
         <h3 className="text-sm font-medium">Mapa de tienda</h3>
         <div className="flex items-center gap-1.5 text-[12px] text-[var(--ink-muted)]">
           {hasTracking && (
             <span className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-[var(--background)]">
               <span className="w-1 h-1 rounded-full bg-emerald-500 animate-pulse" />
-              En vivo{livePeople.length > 0 ? ` · ${livePeople.length} en cuadro` : ''}
+              En vivo
             </span>
           )}
           <span>{transformedZones.length} zonas</span>
@@ -261,12 +234,13 @@ export function StoreMapPanel({ zonasData, conteoZonas, tracking, currentTimeSec
         </div>
       </div>
 
-      <div ref={svgWrapRef} className="relative flex-1 min-h-0 w-full overflow-hidden p-2" style={{ minHeight: '260px' }}>
+      <div className="p-2" style={{ height: `calc(100% - 34px)` }}>
         <svg
+          width="100%"
+          height="100%"
           viewBox={`0 0 ${mapSize.width} ${mapSize.height}`}
           preserveAspectRatio="xMidYMid meet"
-          className="absolute inset-2 block"
-          style={{ width: 'calc(100% - 16px)', height: 'calc(100% - 16px)' }}
+          className="w-full h-full"
         >
           <rect
             x="0" y="0"

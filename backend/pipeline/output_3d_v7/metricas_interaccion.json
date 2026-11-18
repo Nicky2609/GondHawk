@@ -1,0 +1,99 @@
+{
+  "total": {
+    "visitas": 12,
+    "se_detiene": 12,
+    "toma_producto": 4,
+    "devuelve": 1,
+    "se_lo_lleva": 3,
+    "tasa_interaccion": 0.3333,
+    "tasa_rechazo": 0.25
+  },
+  "zonas": [
+    {
+      "zone_id": "gondola_A1",
+      "personas_unicas": 3,
+      "embudo": {
+        "visitas": 7,
+        "pasa_de_largo": 0,
+        "se_detiene": 7,
+        "toma_producto": 2,
+        "devuelve": 0,
+        "se_lo_lleva": 2
+      },
+      "tasa_detencion": 1.0,
+      "tasa_interaccion": 0.2857,
+      "tasa_rechazo": 0.0,
+      "tasa_conversion": 1.0,
+      "dwell_promedio_s": 1.55,
+      "temperatura": "templada"
+    },
+    {
+      "zone_id": "gondola_A2",
+      "personas_unicas": 2,
+      "embudo": {
+        "visitas": 2,
+        "pasa_de_largo": 0,
+        "se_detiene": 2,
+        "toma_producto": 1,
+        "devuelve": 1,
+        "se_lo_lleva": 0
+      },
+      "tasa_detencion": 1.0,
+      "tasa_interaccion": 0.5,
+      "tasa_rechazo": 1.0,
+      "tasa_conversion": 0.0,
+      "dwell_promedio_s": 0.62,
+      "temperatura": "templada"
+    },
+    {
+      "zone_id": "gondola_A3",
+      "personas_unicas": 3,
+      "embudo": {
+        "visitas": 3,
+        "pasa_de_largo": 0,
+        "se_detiene": 3,
+        "toma_producto": 1,
+        "devuelve": 0,
+        "se_lo_lleva": 1
+      },
+      "tasa_detencion": 1.0,
+      "tasa_interaccion": 0.3333,
+      "tasa_rechazo": 0.0,
+      "tasa_conversion": 1.0,
+      "dwell_promedio_s": 2.88,
+      "temperatura": "templada"
+    }
+  ],
+  "alertas": [],
+  "recomendaciones": [
+    {
+      "zone_id": "gondola_A2",
+      "patron": "muestra_insuficiente",
+      "titulo": "Datos insuficientes",
+      "prioridad": "informativa",
+      "evidencia": {
+        "visitas": 2
+      },
+      "detalle": "Solo 2 visitas registradas: no alcanza para sacar conclusiones sobre esta zona.",
+      "accion": "Ampliar la ventana de grabación antes de decidir sobre esta góndola."
+    },
+    {
+      "zone_id": "gondola_A3",
+      "patron": "muestra_insuficiente",
+      "titulo": "Datos insuficientes",
+      "prioridad": "informativa",
+      "evidencia": {
+        "visitas": 3
+      },
+      "detalle": "Solo 3 visitas registradas: no alcanza para sacar conclusiones sobre esta zona.",
+      "accion": "Ampliar la ventana de grabación antes de decidir sobre esta góndola."
+    }
+  ],
+  "recomendaciones_fuente": "reglas",
+  "meta": {
+    "video_ref": "pipeline/uploads/t3d_v3.mp4",
+    "frames_procesados": 1350,
+    "t0": "2026-08-20T09:00:00",
+    "min_dwell_s": 0.5
+  }
+}

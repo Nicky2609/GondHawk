@@ -1,7 +1,11 @@
 export const API_BASE = 'http://localhost:8000';
 
+// Opciones de análisis. `zonasAuto` en true por defecto: las zonas guardadas
+// corresponden al video con el que se calibró el sistema, así que sobre
+// cualquier otro video caen donde no hay góndolas y todas las métricas dan
+// cero. Proponerlas a partir del video que se sube es lo correcto por defecto.
 export const ANALYSIS_DEFAULTS = {
-  zonasAuto: false,
+  zonasAuto: true,
   frameSkip: 2,
 };
 
@@ -10,16 +14,16 @@ export const DATA_SOURCES = {
   analyzeVideo: `${API_BASE}/api/videos/analyze`,
   heatmapImage: `${API_BASE}/api/videos/heatmap`,
   historial: `${API_BASE}/api/analisis`,
-  analisis: (id) => `${API_BASE}/api/analisis/${encodeURIComponent(id)}`,
-  archivo: (id, nombre) => `${API_BASE}/api/analisis/${encodeURIComponent(id)}/archivo/${nombre}`,
-  reporte: (id, formato) => `${API_BASE}/api/analisis/${encodeURIComponent(id)}/reporte/${formato}`,
-  recomendaciones: (id) => `${API_BASE}/api/analisis/${encodeURIComponent(id)}/recomendaciones`,
+  analisis: (id) => `${API_BASE}/api/analisis/${id}`,
+  archivo: (id, nombre) => `${API_BASE}/api/analisis/${id}/archivo/${nombre}`,
+  reporte: (id, formato) => `${API_BASE}/api/analisis/${id}/reporte/${formato}`,
+  recomendaciones: (id) => `${API_BASE}/api/analisis/${id}/recomendaciones`,
 };
 
 export function buildAnalyzeUrl({ zonasAuto, frameSkip } = ANALYSIS_DEFAULTS) {
   const params = new URLSearchParams({
     zonas_auto: String(Boolean(zonasAuto)),
-    frame_skip: String(frameSkip ?? 2),
+    frame_skip: String(frameSkip ?? 1),
   });
   return `${DATA_SOURCES.analyzeVideo}?${params.toString()}`;
 }
