@@ -283,3 +283,16 @@ Se documentan porque afectan cómo deben leerse las métricas:
 
 Proyecto desarrollado para HackTech 5.0 2026 · Universidad Santo Tomás,
 Seccional Tunja.
+
+### Integrantes
+
+| # | Integrante | Módulo |
+|---|------------|--------|
+| 1 | Nicol | Líder técnica · Eventos de interacción |
+| 2 | Samuel | Detección de personas |
+| 3 | Juan | Tracking |
+| 4 | Arturo | Mapas de calor y zonas |
+| 5 | Diego | Tiempo de permanencia |
+| 6 | Laura | Backend / pipeline |
+| 7 | Julian Roa | Dashboard |
+| 8 | Paula | Recomendación y cumplimiento |
