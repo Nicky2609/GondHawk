@@ -3,7 +3,7 @@
 venv/
 
 # Dependencias y compilaciones frontend
-frontend/node_modules/
+node_modules/
 frontend/dist/
 frontend/dist-ssr/
 frontend/public/data/*.json
