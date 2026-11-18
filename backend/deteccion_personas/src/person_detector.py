@@ -46,7 +46,7 @@ PERSON_CLASS_ID = 0
 # Raiz del proyecto (GondHawk-main), calculada desde este archivo para que
 # el path del modelo no dependa de la maquina/usuario donde se clone el repo.
 _PROJECT_ROOT = Path(__file__).resolve().parents[3]
-_MODELO_SINTETICO = _PROJECT_ROOT / "runs" / "detect" / "train" / "weights" / "last.pt"
+_MODELO_SINTETICO = _PROJECT_ROOT / "runs" / "detect" / "train" / "weights" / "best.pt"
 
 # Perfiles de deteccion segun el origen del video.
 PERFILES = {
