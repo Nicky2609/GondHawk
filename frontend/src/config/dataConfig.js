@@ -6,7 +6,7 @@ export const API_BASE = 'http://localhost:8000';
 // cero. Proponerlas a partir del video que se sube es lo correcto por defecto.
 export const ANALYSIS_DEFAULTS = {
   zonasAuto: true,
-  frameSkip: 1,
+  frameSkip: 2,
 };
 
 export const DATA_SOURCES = {
