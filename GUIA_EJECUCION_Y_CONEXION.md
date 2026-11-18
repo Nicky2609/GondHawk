@@ -63,7 +63,7 @@ docker compose down
 - Crea `backend/.env` o define variables de entorno antes de ejecutar `docker compose up`.
 - Variables admitidas: `ANTHROPIC_API_KEY`, `SUPABASE_URL`, `SUPABASE_SERVICE_KEY`, `SUPABASE_BUCKET`, `GONDHAWK_TIENDA_ID` y `GONDHAWK_CAMARA_ID`.
 - Sin credenciales externas, el contenedor guarda resultados en los volúmenes `gondhawk_output` y `gondhawk_uploads`.
-- El `backend/Dockerfile` enlaza `runs/detect/train/weights/best.pt` a `last.pt` cuando `last.pt` no existe en el repositorio.
+- El `backend/Dockerfile` copia `runs/detect/train/weights/best.pt` para el perfil sintético de YOLO.
 - Para compilar con soporte CUDA, ejecuta el build del backend pasando `--build-arg TORCH_INDEX_URL=https://download.pytorch.org/whl/cu124`.
 
 ## Levantar el backend

@@ -54,6 +54,9 @@ import argparse
 import json
 import math
 import random
+import shutil
+import subprocess
+import tempfile
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -445,10 +448,12 @@ class GeneradorEscena3D:
             return
 
         try:
-            import subprocess
-
             import imageio_ffmpeg
-        except ImportError:
+
+            ffmpeg_exe = imageio_ffmpeg.get_ffmpeg_exe()
+        except Exception:
+            ffmpeg_exe = shutil.which("ffmpeg")
+        if not ffmpeg_exe:
             print("[aviso] pip install imageio-ffmpeg para reproducir el video en el tablero.")
             return
 
@@ -456,7 +461,7 @@ class GeneradorEscena3D:
         try:
             resultado = subprocess.run(
                 [
-                    imageio_ffmpeg.get_ffmpeg_exe(), "-y", "-loglevel", "error",
+                    ffmpeg_exe, "-y", "-loglevel", "error",
                     "-i", str(ruta),
                     "-vcodec", "libx264", "-preset", "veryfast", "-crf", "23",
                     "-pix_fmt", "yuv420p", "-movflags", "+faststart",
@@ -478,17 +483,15 @@ class GeneradorEscena3D:
             temporal.unlink(missing_ok=True)
 
     def _abrir_pipe_h264(self, ruta: Path):
+        stderr_file = None
         try:
-            import shutil
-            import subprocess
-
             try:
                 import imageio_ffmpeg
                 ffmpeg_exe = imageio_ffmpeg.get_ffmpeg_exe()
             except Exception:
                 ffmpeg_exe = shutil.which("ffmpeg")
             if not ffmpeg_exe:
-                return None
+                return None, None
 
             cmd = [
                 ffmpeg_exe, "-y", "-loglevel", "error",
@@ -499,9 +502,13 @@ class GeneradorEscena3D:
                 "-pix_fmt", "yuv420p", "-movflags", "+faststart",
                 str(ruta),
             ]
-            return subprocess.Popen(cmd, stdin=subprocess.PIPE, stderr=subprocess.PIPE)
+            stderr_file = tempfile.TemporaryFile()
+            proc = subprocess.Popen(cmd, stdin=subprocess.PIPE, stderr=stderr_file)
+            return proc, stderr_file
         except Exception:
-            return None
+            if stderr_file is not None:
+                stderr_file.close()
+            return None, None
 
     def generar(self, ruta_video: Path, on_progress=None) -> dict[str, Any]:
         personas = self._crear_personas()
@@ -515,7 +522,7 @@ class GeneradorEscena3D:
 
         ruta_video = Path(ruta_video)
         ruta_video.parent.mkdir(parents=True, exist_ok=True)
-        ffmpeg_proc = self._abrir_pipe_h264(ruta_video)
+        ffmpeg_proc, ffmpeg_stderr = self._abrir_pipe_h264(ruta_video)
         writer = None
         if ffmpeg_proc is not None:
             print("[render] Códec: h264 (directo)")
@@ -528,6 +535,7 @@ class GeneradorEscena3D:
         anotaciones: dict[int, list[dict]] = {}
         caras_estaticas = self.renderer.preparar_caras(self.tienda.estaticas)
         rng_ruido = np.random.default_rng(self.seed)
+        render_completo = False
 
         try:
             for frame_id in range(self.total_frames):
@@ -568,14 +576,40 @@ class GeneradorEscena3D:
                     on_progress(frame_id, self.total_frames)
                 if frame_id % 100 == 0:
                     print(f"[render] frame {frame_id}/{self.total_frames}")
+            render_completo = True
         finally:
             if ffmpeg_proc is not None:
-                if ffmpeg_proc.stdin is not None:
-                    ffmpeg_proc.stdin.close()
-                ffmpeg_proc.communicate(timeout=300)
+                try:
+                    if ffmpeg_proc.stdin is not None:
+                        try:
+                            ffmpeg_proc.stdin.close()
+                        except OSError:
+                            pass
+                        ffmpeg_proc.stdin = None
+                    if render_completo:
+                        ffmpeg_proc.wait(timeout=300)
+                        if ffmpeg_proc.returncode != 0:
+                            msg = ""
+                            if ffmpeg_stderr is not None:
+                                ffmpeg_stderr.seek(0)
+                                msg = ffmpeg_stderr.read().decode("utf-8", errors="ignore").strip()
+                            ruta_video.unlink(missing_ok=True)
+                            raise RuntimeError(
+                                f"ffmpeg falló al codificar {ruta_video} ({ffmpeg_proc.returncode}): {msg}"
+                            )
+                    else:
+                        ffmpeg_proc.terminate()
+                        ffmpeg_proc.wait(timeout=10)
+                        ruta_video.unlink(missing_ok=True)
+                finally:
+                    if ffmpeg_stderr is not None:
+                        ffmpeg_stderr.close()
             elif writer is not None:
                 writer.release()
-                self._convertir_a_h264(ruta_video)
+                if render_completo:
+                    self._convertir_a_h264(ruta_video)
+                else:
+                    ruta_video.unlink(missing_ok=True)
 
         conteo: dict[str, int] = {}
         for p in personas:

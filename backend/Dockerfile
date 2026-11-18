@@ -27,8 +27,9 @@ RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir -r /app/backend/requirements.txt
 
 COPY backend /app/backend
+COPY runs /app/runs
 
-RUN mkdir -p /app/runs /app/backend/pipeline/output /app/backend/pipeline/uploads
+RUN mkdir -p /app/backend/pipeline/output /app/backend/pipeline/uploads
 
 EXPOSE 8000
 
